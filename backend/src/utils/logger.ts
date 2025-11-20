@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-export const logger = {
+ export const logger = {
   info: (message: string, ...optionalParams: unknown[]): void => {
     console.log(`[INFO] ${message}`, ...optionalParams);
   },
