@@ -498,13 +498,13 @@ volumes:
 
 ### 7.2 Production Deployment
 
-**Recommended Stack:**
+**Chosen Stack:**
 
 - **Frontend:** Vercel or Netlify (free tier)
-- **Backend:** Render.com or Railway.app ($5-10/month)
-- **Database:** MongoDB Atlas (free tier: 512MB)
-- **Storage:** MinIO self-hosted OR migrate to AWS S3 ($1-5/month)
-- **Domain:** Cloudflare DNS + SSL (free)
+- **Backend:** Render.com or Railway.app
+- **Database:** MongoDB Atlas
+- **Storage:** MinIO self-hosted OR migrate to AWS S3
+- **Domain:** Cloudflare DNS + SSL 
 
 **Environment Variables:**
 
@@ -537,17 +537,11 @@ VITE_WS_URL=wss://api.lostlink.com
 
 ## 8. Eight-Week MVP Roadmap
 
-**Team Structure (3 People):**
-
-- **Person A (Backend Lead):** API, database, matching algorithm
-- **Person B (Frontend Lead):** React UI, map integration, state management
-- **Person C (Full-Stack):** Auth, chat, notifications, DevOps
 
 ### Week 1: Foundation & Setup
 
 **Goals:** Project scaffolding, database, basic auth
 
-- **All:** Kickoff meeting, finalize architecture, setup Git repo
 - **A:** Initialize TypeScript Node.js project, Express setup, MongoDB connection, User model
 - **B:** Initialize React + Vite, Tailwind + shadcn, routing setup
 - **C:** Auth service (register, login, JWT), email verification stub
