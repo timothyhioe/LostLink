@@ -23,6 +23,24 @@ services:
     depends_on:
       - minio
 
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+      args:
+        NODE_ENV: development
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:5000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
+    depends_on:
+      - backend
+
   minio:
     image: quay.io/minio/minio
     command: server /data --console-address ":9001"
