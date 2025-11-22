@@ -1,4 +1,3 @@
-import React from 'react'
 import './Home.css'
 import testPicture from '../assets/testFolder/test-picture.png'
 import testPicture2 from '../assets/testFolder/test-picture-2.webp'
