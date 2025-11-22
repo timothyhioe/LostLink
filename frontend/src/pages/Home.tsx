@@ -1,5 +1,3 @@
-import React from 'react'
-import { Link } from "react-router-dom";
 import './Home.css'
 import testPicture from '../assets/testFolder/test-picture.png'
 import testPicture2 from '../assets/testFolder/test-picture-2.webp'
