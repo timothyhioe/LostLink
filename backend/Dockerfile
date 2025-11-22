@@ -2,7 +2,12 @@ FROM node:20-alpine AS base
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+ARG NODE_ENV=production
+RUN if [ "$NODE_ENV" = "development" ]; then \
+        npm ci; \
+    else \
+        npm ci --omit=dev; \
+    fi
 
 FROM node:20-alpine AS build
 WORKDIR /app
