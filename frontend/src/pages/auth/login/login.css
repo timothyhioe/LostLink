@@ -1,0 +1,161 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: white;
+  font-family: 'Geist', system-ui, sans-serif;
+}
+
+.login-box {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  background: var(--color-secondary);
+}
+
+.login-box h1 {
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+  color: #333;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  border-left: 4px solid #c33;
+}
+
+.success-message {
+  background-color: #efe;
+  color: #3a3;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  border-left: 4px solid #3a3;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: 'Geist', system-ui, sans-serif;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.login-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: 'Geist', system-ui, sans-serif;
+  margin-bottom: 0.75rem;
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px var(--color-primary);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.dev-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: 'Geist', system-ui, sans-serif;
+}
+
+.dev-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px var(--color-primary);
+}
+
+.signup-link {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.signup-link a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.signup-link a:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+.login-lostlink-text {
+    font-weight: 600;
+    font-size: 3rem;
+    margin-left: 3vw;
+}
+
+.login-lostlink-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-lostlink-description {
+    font-size: 2rem;
+    margin-left: 3vw;
+    width: 20vw;
+}
+
+@media (max-width: 480px) {
+  .login-box {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+
+  .login-box h1 {
+    font-size: 1.5rem;
+  }
+}

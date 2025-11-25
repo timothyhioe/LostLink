@@ -2,3 +2,20 @@
     font-size: 5rem;
     color: black;
 }
+
+.home-logout-button {
+    padding: '0.5rem 1rem';
+    background-color: var(--color-accent);
+    color: 'white';
+    border: 'none';
+    cursor: 'pointer';
+    font-weight: '600';
+    margin-right: 2vw;
+    padding: 2vh 3vw;
+    border-radius: 4px;
+    margin-top: 2vh;
+}
+
+.home-logout-button:hover {
+      cursor: pointer;
+}
