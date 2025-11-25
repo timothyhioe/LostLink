@@ -4,8 +4,10 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
 
 import { env } from './config/env';
+import { swaggerSpec } from './config/swagger';
 import { apiRouter } from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -36,6 +38,12 @@ app.use(
 app.get('/', (_req, res) => {
   res.json({ message: 'LostLink API', version: '0.1.0' });
 });
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'LostLink API Documentation',
+  customfavIcon: '/favicon.ico',
+}));
 
 app.use('/api', apiRouter);
 
