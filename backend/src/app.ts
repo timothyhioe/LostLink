@@ -18,7 +18,7 @@ app.set('trust proxy', true);
 app.use(
   cors({
     origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(','),
-    credentials: true
+    credentials: true,
   })
 );
 app.use(helmet());
@@ -31,7 +31,7 @@ app.use(
     windowMs: 15 * 60 * 1000,
     limit: 100,
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
   })
 );
 
@@ -40,10 +40,14 @@ app.get('/', (_req, res) => {
 });
 
 // Swagger API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customSiteTitle: 'LostLink API Documentation',
-  customfavIcon: '/favicon.ico',
-}));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'LostLink API Documentation',
+    customfavIcon: '/favicon.ico',
+  })
+);
 
 app.use('/api', apiRouter);
 
@@ -51,4 +55,3 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 export { app };
-
