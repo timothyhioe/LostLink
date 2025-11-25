@@ -6,6 +6,8 @@ export interface IUser extends Document {
   passwordHash: string;
   name: string;
   emailVerified: boolean;
+  verificationCode?: string | null;
+  verificationCodeExpires?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +38,16 @@ const userSchema = new Schema<IUser>(
     emailVerified: {
       type: Boolean,
       default: false
+    },
+    verificationCode: {
+      type: String,
+      default: null,
+      select: false
+    },
+    verificationCodeExpires: {
+      type: Date,
+      default: null,
+      select: false
     }
   },
   {

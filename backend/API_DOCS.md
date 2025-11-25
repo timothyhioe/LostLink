@@ -52,8 +52,9 @@ For any endpoint:
 
 ### Authentication (`/api/auth`)
 
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login and get JWT token
+- `POST /api/auth/register` - Register a new user (sends verification code)
+- `POST /api/auth/verify-code` - Verify email with 6-digit code
+- `POST /api/auth/login` - Login and get JWT token (requires verified email)
 - `GET /api/auth/me` - Get current user (requires auth)
 
 ### Health (`/api`)

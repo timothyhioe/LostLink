@@ -7,6 +7,8 @@ import crypto from 'crypto';
 import User from '../models/User';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
+import sendEmail from '../utils/sendEmail';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 const ALLOWED_DOMAIN = '@stud.h-da.de';
@@ -113,20 +115,30 @@ router.post('/register', async (req: Request, res: Response) => {
     // Hash password
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
+    const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
     // Create user
     const user = await User.create({
       name: name.trim(),
       email: normalizedEmail,
       passwordHash,
       emailVerified: false,
+      verificationCode,
+      verificationCodeExpires,
     });
 
     logger.info('User registered', { userId: user._id, email: user.email });
 
-    // TODO: Send verification email
-    // For now, just return success
+    // TODO: implement real email verification via external API
+    await sendEmail({
+      to: normalizedEmail,
+      subject: 'LostLink Verification Code',
+      text: `Your verification code is ${verificationCode}. It expires in 15 minutes.`,
+    });
+
     return res.status(201).json({
-      message: 'Account created successfully',
+      message: 'Account created. Please verify your email using the code sent.',
       user: {
         id: user._id.toString(),
         name: user.name,
@@ -269,6 +281,109 @@ router.post('/login', async (req: Request, res: Response) => {
 
 /**
  * @openapi
+ * /auth/verify-code:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Verify email using code
+ *     description: Verify a user's email by submitting the code sent via email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - code
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: john.doe@stud.h-da.de
+ *                 description: Registered email address
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *                 description: Six-digit verification code
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Email verified successfully
+ *       400:
+ *         description: Invalid code or email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/verify-code', async (req: Request, res: Response) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res
+        .status(400)
+        .json({ message: 'Email and verification code are required' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      '+verificationCode +verificationCodeExpires'
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.emailVerified) {
+      return res.status(200).json({ message: 'Email already verified' });
+    }
+
+    if (
+      !user.verificationCode ||
+      !user.verificationCodeExpires ||
+      user.verificationCode !== code ||
+      user.verificationCodeExpires < new Date()
+    ) {
+      return res.status(400).json({ message: 'Invalid or expired code' });
+    }
+
+    user.emailVerified = true;
+    user.verificationCode = null;
+    user.verificationCodeExpires = null;
+    await user.save();
+
+    logger.info('User verified email', { userId: user._id, email: user.email });
+
+    return res.json({ message: 'Email verified successfully' });
+  } catch (error) {
+    logger.error('Email verification failed', { error });
+    return res.status(500).json({ message: 'Verification failed' });
+  }
+});
+
+/**
+ * @openapi
  * /auth/me:
  *   get:
  *     tags:
@@ -306,7 +421,7 @@ router.post('/login', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/me', async (req: Request, res: Response) => {
+router.get('/me', authenticate, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Not authenticated' });
