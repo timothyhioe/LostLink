@@ -2,6 +2,7 @@ services:
   backend:
     build:
       context: ./backend
+      target: development
       args:
         NODE_ENV: development
     env_file:
@@ -15,11 +16,10 @@ services:
       - MINIO_BUCKET=lostlink-items
       - CORS_ORIGIN=http://localhost:5173
     ports:
-      - "5000:5000"
+      - '5000:5000'
     volumes:
-      - ./backend:/app
-      - /app/node_modules
-    command: npm run dev
+      - ./backend/src:/app/src
+      - ./backend/tsconfig.json:/app/tsconfig.json
     depends_on:
       - minio
 
@@ -33,7 +33,7 @@ services:
       - NODE_ENV=development
       - VITE_API_URL=http://localhost:5000
     ports:
-      - "5173:5173"
+      - '5173:5173'
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -49,8 +49,8 @@ services:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - '9000:9000'
+      - '9001:9001'
     volumes:
       - minio-data:/data
 
