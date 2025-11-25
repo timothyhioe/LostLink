@@ -9,6 +9,20 @@ RUN if [ "$NODE_ENV" = "development" ]; then \
         npm ci --omit=dev; \
     fi
 
+# Development stage
+FROM node:20-alpine AS development
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY tsconfig.json ./
+COPY src ./src
+
+EXPOSE 5000
+
+CMD ["npm", "run", "dev"]
+
 FROM node:20-alpine AS build
 WORKDIR /app
 
