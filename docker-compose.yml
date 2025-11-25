@@ -20,6 +20,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/tsconfig.json:/app/tsconfig.json
+      - ./backend/.env:/app/.env
     depends_on:
       - minio
 

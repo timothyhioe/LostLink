@@ -1,100 +1,51 @@
 # API Documentation
 
-## Accessing API Documentation
+## Swagger UI
 
-The LostLink API documentation is available via Swagger UI at:
+Interactive API documentation: `http://localhost:5000/api-docs`
 
-**Local Development:** `http://localhost:5000/api-docs`
+**Using Authentication:**
 
-## Features
+1. Register/login to get JWT token
+2. Click **"Authorize"** → Enter `Bearer <token>`
+3. Test protected endpoints
 
-- **Interactive API Explorer** - Test endpoints directly from your browser
-- **Request/Response Schemas** - See all required fields and data types
-- **Authentication Testing** - Try authenticated endpoints with JWT tokens
-- **Example Requests** - Pre-filled examples for each endpoint
-
-## Using Swagger UI
-
-### 1. View Documentation
-Simply navigate to `http://localhost:5000/api-docs` when the server is running.
-
-### 2. Test Authenticated Endpoints
-
-For endpoints that require authentication (marked with a lock icon 🔒):
-
-1. **Register/Login** to get a JWT token
-   - Use the `/api/auth/register` or `/api/auth/login` endpoint
-   - Copy the `token` from the response
-
-2. **Authorize in Swagger**
-   - Click the **"Authorize"** button at the top right
-   - Enter: `Bearer <your-token-here>`
-   - Click **"Authorize"**
-   - Click **"Close"**
-
-3. **Test Protected Endpoints**
-   - Now you can test endpoints like `/api/auth/me`
-   - The JWT token will be automatically included in requests
-
-### 3. Try It Out
-
-For any endpoint:
-1. Click **"Try it out"**
-2. Fill in the request body/parameters
-3. Click **"Execute"**
-4. View the response below
-
-## Available Endpoints
+## Endpoints
 
 ### Authentication (`/api/auth`)
 
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login and get JWT token
-- `GET /api/auth/me` - Get current user (requires auth)
+| Method | Endpoint                | Description                    | Auth Required |
+| ------ | ----------------------- | ------------------------------ | ------------- |
+| `POST` | `/api/auth/register`    | Register new user              | No            |
+| `POST` | `/api/auth/verify-code` | Verify email with 6-digit code | No            |
+| `POST` | `/api/auth/login`       | Login and get JWT token        | No            |
+| `GET`  | `/api/auth/me`          | Get current user               | Yes           |
 
 ### Health (`/api`)
 
-- `GET /api/health` - Health check
+| Method | Endpoint      | Description  | Auth Required |
+| ------ | ------------- | ------------ | ------------- |
+| `GET`  | `/api/health` | Health check | No            |
 
-## Development
+## Authentication Flow
 
-The API documentation is auto-generated from JSDoc comments in the route files using:
-- `swagger-jsdoc` - Generates OpenAPI spec from code comments
-- `swagger-ui-express` - Renders interactive Swagger UI
+1. **Register** → `POST /api/auth/register`
 
-To add documentation for new endpoints, add JSDoc comments above your route handlers:
+   - Body: `{ name, email, password }`
+   - Email must be `@stud.h-da.de`
+   - Returns verification code (check backend logs)
 
-```typescript
-/**
- * @openapi
- * /your-endpoint:
- *   post:
- *     tags:
- *       - YourTag
- *     summary: Brief description
- *     description: Detailed description
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               field:
- *                 type: string
- *     responses:
- *       200:
- *         description: Success response
- */
-router.post('/your-endpoint', async (req, res) => {
-  // ... your code
-});
-```
+2. **Verify** → `POST /api/auth/verify-code`
 
-## Notes
+   - Body: `{ email, code }`
+   - Code expires in 15 minutes
 
-- All endpoints are prefixed with `/api`
-- Authentication uses JWT Bearer tokens
-- Email addresses must be from `@stud.h-da.de` domain
-- Passwords must be at least 8 characters long
+3. **Login** → `POST /api/auth/login`
+
+   - Body: `{ email, password }`
+   - Returns JWT token (expires in 7 days)
+
+4. **Get User** → `GET /api/auth/me`
+   - Header: `Authorization: Bearer <token>`
+
 
