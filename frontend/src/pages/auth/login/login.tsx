@@ -1,0 +1,136 @@
+import { useState } from 'react';
+import './login.css';
+
+//auto detect API URL based on current environment
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    console.log('=== LOGIN ATTEMPT ===');
+    console.log('API_URL:', API_URL);
+    console.log('Email:', email);
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      console.log('Login response status:', response.status);
+      console.log('Login response data:', data);
+
+      if (!response.ok) {
+        setError(data.message || 'Login failed');
+        setLoading(false);
+        console.log('Login failed:', data.message);
+        return;
+      }
+
+      //store token and user data
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      console.log('Token stored in localStorage:', !!localStorage.getItem('authToken'));
+      console.log('User stored in localStorage:', !!localStorage.getItem('user'));
+
+      //show the success message
+      setSuccess('Login successful! Redirecting to home...');
+      console.log('Success, redirecting');
+
+      //reload the page to refresh authentication state
+      setTimeout(() => {
+        console.log('REDIRECTING NOW with window.location.href');
+        window.location.href = '/';
+      }, 1000);
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+      console.error('Login error:', err);
+      setLoading(false);
+    }
+  };
+
+  // Development mode - bypass login
+  const handleDevLogin = () => {
+    console.log('=== DEVELOPMENT MODE - SKIPPING LOGIN ===');
+    localStorage.setItem('authToken', 'dev-token-' + Date.now());
+    localStorage.setItem('user', JSON.stringify({
+      id: 'dev-user',
+      name: 'Development User',
+      email: 'dev@localhost',
+      emailVerified: true,
+    }));
+    window.location.href = '/';
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-box">
+        <h1>Login</h1>
+        
+        {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
+        
+        <form onSubmit={handleLogin}>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="john.doe@stud.h-da.de"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <button type="submit" disabled={loading} className="login-btn">
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+
+        <button onClick={handleDevLogin} className="dev-btn">
+          Development Mode
+        </button>
+
+        <div className="signup-link">
+          Don't have a user? <a href="#signup">Sign up</a>
+        </div>
+      </div>
+
+      <div className='login-lostlink-container'>
+        <p className='login-lostlink-text'>LostLink</p>
+        <p className='login-lostlink-description'>Found the stuff you lost at h_da easily.</p>
+      </div>
+     
+    </div>
+  );
+}
