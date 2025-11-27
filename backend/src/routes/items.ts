@@ -299,6 +299,13 @@ router.get("/my", authenticate, async (req, res, next) => {
  * /items/images/{filename}:
  *   get:
  *     summary: Get an image file
+ *     description: |
+ *       Returns an image file from MinIO storage.
+ *
+ *       **Note:** Swagger UI cannot display binary image responses.
+ *       To view the image, copy the Request URL and open it in your browser.
+ *
+ *       Example: `http://localhost:5000/api/items/images/123-photo.jpg`
  *     tags: [Items]
  *     parameters:
  *       - in: path
@@ -307,11 +314,24 @@ router.get("/my", authenticate, async (req, res, next) => {
  *         schema:
  *           type: string
  *         description: Image filename (e.g., 123-photo.jpg)
+ *         example: 1764278980657-ForestWaterBottle_16oz_Square_Black_703b29c6-5070-4268-88a2-6be7747c89e5.jpg
  *     responses:
  *       200:
- *         description: Image file
+ *         description: Image file (JPEG, PNG, GIF, or WebP). Copy the Request URL to view in browser.
  *         content:
- *           image/*:
+ *           image/jpeg:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/png:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/gif:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/webp:
  *             schema:
  *               type: string
  *               format: binary
