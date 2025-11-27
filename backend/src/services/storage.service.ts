@@ -72,7 +72,11 @@ export class StorageService {
         filename,
         expiresIn
       );
-      return url;
+      const externalUrl = url.replace(
+        "http://minio:9000",
+        "http://localhost:9000"
+      );
+      return externalUrl;
     } catch (error) {
       logger.error("Failed to generate file URL", { error, filename });
       throw new Error("Failed to generate file URL");
