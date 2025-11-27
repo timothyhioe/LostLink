@@ -19,10 +19,11 @@ html,body,#root{
 }
 
 :root {
-  --color-primary: #AD8B73;
-  --color-secondary: #CEAB93;
+  --color-primary: #183682;
+  --color-secondary: #e6bb00;
   --color-accent: #E3CAA5;
-  --color-background: #FFFBE9;
+  --color-background-light:white;
+  --color-background-dark:#222222;
 }
 
 h1, h2, h3, h4, h5, h6, p, blockquote, li, p {

@@ -14,13 +14,13 @@
   padding: 2rem;
   width: 100%;
   max-width: 400px;
-  background: var(--color-secondary);
+  background: var(--color-primary);
 }
 
 .login-box h1 {
   margin: 0 0 1.5rem 0;
   text-align: center;
-  color: #333;
+  color: white;
   font-size: 1.75rem;
   font-weight: 600;
 }
@@ -53,7 +53,7 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #333;
+  color: white;
   font-size: 0.95rem;
 }
 
@@ -88,8 +88,8 @@
 }
 
 .login-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px var(--color-primary);
+  transform: translateY(-1.5px);
+  box-shadow: 0 2px 8px var(--color-primary);
 }
 
 .login-btn:disabled {
@@ -110,25 +110,25 @@
 }
 
 .dev-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px var(--color-primary);
+  transform: translateY(-1.5px);
+  box-shadow: 0 2px 8px var(--color-primary);
 }
 
 .signup-link {
   text-align: center;
   margin-top: 1rem;
   font-size: 0.9rem;
+  color: white;
 }
 
 .signup-link a {
-  color: #667eea;
+  color: var(--color-secondary);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s;
 }
 
 .signup-link a:hover {
-  color: #764ba2;
   text-decoration: underline;
 }
 
