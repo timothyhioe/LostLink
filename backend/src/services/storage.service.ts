@@ -45,7 +45,8 @@ export class StorageService {
         }
       );
 
-      const url = await this.getFileUrl(filename);
+      // Generate proxy URL instead of presigned URL
+      const url = this.getProxyUrl(filename);
 
       logger.info("File uploaded successfully", { filename, size: file.size });
 
@@ -60,8 +61,20 @@ export class StorageService {
     }
   }
 
-  //get a presigned URL for image (valid for 7 days)
+  /**
+   * Generate proxy URL for image access through API
+   * Format: /api/items/images/{filename}
+   */
+  getProxyUrl(filename: string): string {
+    // Extract just the filename (remove folder prefix)
+    const justFilename = filename.split("/").pop() || filename;
+    return `/api/items/images/${justFilename}`;
+  }
 
+  /**
+   * Get presigned URL (kept for backward compatibility if needed)
+   * Note: Presigned URLs don't work in Docker development due to hostname mismatch
+   */
   async getFileUrl(
     filename: string,
     expiresIn: number = 7 * 24 * 60 * 60

@@ -60,8 +60,8 @@ const ItemSchema = new Schema<IItem>(
       },
       buildingName: {
         type: String,
-        required: true,
-        trim: true,
+        required: true, //false for 'lost' items. user might forgot where they lose their stuff (make it optional)
+        trim: false,
       },
     },
     images: [
