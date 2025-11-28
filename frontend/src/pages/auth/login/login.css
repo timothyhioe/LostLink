@@ -150,9 +150,39 @@
 }
 
 @media (max-width: 480px) {
+  .login-container {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 15vh;
+  }
+
+  .login-lostlink-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+    order: -1;
+  }
+
+  .login-lostlink-text {
+    font-size: 2rem;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .login-lostlink-description {
+    font-size: 1rem;
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+
   .login-box {
     padding: 1.5rem;
     margin: 1rem;
+    order: 0;
+    width: 90%;
   }
 
   .login-box h1 {
