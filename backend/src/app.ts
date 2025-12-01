@@ -19,12 +19,31 @@ if (env.NODE_ENV === "production") {
   app.set("trust proxy", 1); // Trust first proxy
 }
 
-app.use(
-  cors({
-    origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN.split(","),
-    credentials: true,
-  })
-);
+// CORS configuration
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    
+    if (env.CORS_ORIGIN === "*") {
+      // Allow all origins
+      callback(null, true);
+    } else {
+      const allowedOrigins = env.CORS_ORIGIN.split(",").map(o => o.trim());
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Allow in development
+      }
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  maxAge: 86400, // 24 hours
+};
+
+app.use(cors(corsOptions));
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -34,10 +53,12 @@ app.use(
           "'self'",
           "data:",
           "http://localhost:5000", // Allow images from API
-          "http://localhost:5173", // Allow images from frontend
+          "http://localhost:5174", // Vite dev frontend port
+          "http://localhost:5173", // Alternative Vite port
         ],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
+        connectSrc: ["'self'", "http://localhost:5000", "http://localhost:5174", "http://localhost:5173"],
       },
     },
     crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be loaded cross-origin

@@ -29,7 +29,7 @@
 }
 
 .navbar-logo {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: var(--color-primary);
   margin: 0;
@@ -112,7 +112,7 @@
   border-radius: 4px;
   font-weight: 600;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -194,7 +194,7 @@
   border-radius: 4px;
   font-weight: 600;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   white-space: nowrap;
 }
