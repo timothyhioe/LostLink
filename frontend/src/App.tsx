@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Home from './pages/Home'
+import Home from './pages/home/home'
+import MyItems from './pages/myItems/myItems'
 import Login from './pages/auth/login/login'
+import { ChatProvider } from './context/ChatContext'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('authToken')
@@ -30,19 +32,26 @@ function LoginRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={
-          <LoginRoute>
-            <Login />
-          </LoginRoute>
-        } />
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        } />
-      </Routes>
-    </BrowserRouter>
+    <ChatProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={
+            <LoginRoute>
+              <Login />
+            </LoginRoute>
+          } />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          } />
+          <Route path="/my-items" element={
+            <ProtectedRoute>
+              <MyItems />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </BrowserRouter>
+    </ChatProvider>
   )
 }
