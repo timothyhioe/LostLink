@@ -23,13 +23,13 @@ COPY public ./public
 
 RUN npm run build
 
-FROM node:20 AS development
+FROM node:20-alpine AS development
 WORKDIR /app
 
 ENV NODE_ENV=development
 
 COPY package*.json ./
-RUN rm -rf node_modules package-lock.json && npm install
+RUN npm ci
 
 COPY . .
 
