@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import './navbar.css'
 import messageIcon from '../../assets/Navbar/message_.png'
 import messageIconWhite from '../../assets/Navbar/message-white.png'
@@ -16,13 +15,10 @@ interface NavbarProps {
   onLogoClick?: () => void
   isDarkMode: boolean
   onThemeToggle: (isDark: boolean) => void
-  onPostClick: () => void
-  unreadCount?: number
 }
 
-export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMode, onThemeToggle, onPostClick, unreadCount }: NavbarProps) {
+export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMode, onThemeToggle }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const navigate = useNavigate()
 
   // Handle body scroll when menu is open
   useEffect(() => {
@@ -80,7 +76,7 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
           </div>
 
           <div className="navbar-right">
-            <button className="navbar-post-button" onClick={onPostClick}>Post</button>
+            <button className="navbar-post-button">Post</button>
 
             <button 
               className="navbar-theme-toggle"
@@ -94,53 +90,17 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
               className="navbar-message-btn"
               onClick={onMessageClick}
               title="Messages"
-              style={{ position: 'relative' }}
             >
               <img src={isDarkMode ? messageIconWhite : messageIcon} alt="Messages" />
-              {unreadCount && unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-5px',
-                  right: '-5px',
-                  backgroundColor: '#ff4444',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}>
-                  {unreadCount}
-                </span>
-              )}
             </button>
             
             <button className="navbar-notification-btn" title="Notifications">
               <img src={isDarkMode ? notificationIconWhite : notificationIcon} alt="Notifications" />
             </button>
             
-            <div className="navbar-profile-dropdown">
-              <button 
-                className="navbar-profile-btn" 
-                title="Profile"
-              >
-                <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" />
-              </button>
-
-              <div className={`navbar-profile-menu ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
-                <button 
-                  className="navbar-profile-menu-item"
-                  onClick={() => {
-                    navigate('/my-items')
-                  }}
-                >
-                  Meine Posts
-                </button>
-              </div>
-            </div>
+            <button className="navbar-profile-btn" title="Profile">
+              <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" />
+            </button>
 
             <button 
               className="navbar-logout-button"
@@ -167,7 +127,7 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
           {/* Close button */}
           
 
-          <button className="navbar-post-button navbar-mobile-item" onClick={onPostClick}>Post</button>
+          <button className="navbar-post-button navbar-mobile-item">Post</button>
           <button 
             className="navbar-theme-toggle navbar-mobile-item"
             onClick={() => onThemeToggle(!isDarkMode)}
@@ -186,15 +146,8 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
           <button className="navbar-notification-btn navbar-mobile-item" title="Notifications">
             <img src={isDarkMode ? notificationIconWhite : notificationIcon} alt="Notifications" /> Notifications
           </button>
-          <button 
-            className="navbar-profile-btn navbar-mobile-item" 
-            title="Profile"
-            onClick={() => {
-              navigate('/my-items')
-              handleCloseMenu()
-            }}
-          >
-            <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" /> My Posted Items
+          <button className="navbar-profile-btn navbar-mobile-item" title="Profile">
+            <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" /> Profile
           </button>
           <button 
             className="navbar-logout-button navbar-mobile-item"

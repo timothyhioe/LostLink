@@ -16,12 +16,9 @@ async function bootstrap(): Promise<void> {
   const server = http.createServer(app);
   const io = new SocketIOServer(server, {
     cors: {
-      origin: "*",
-      credentials: false,
-      methods: ["GET", "POST"],
-      allowedHeaders: ["Content-Type", "Authorization"],
+      origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN.split(","),
+      credentials: true,
     },
-    transports: ["websocket", "polling"],
   });
 
   registerChatGateway(io);

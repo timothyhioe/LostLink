@@ -34,11 +34,11 @@ services:
     environment:
       - NODE_ENV=development
       - VITE_API_URL=http://localhost:5000
-      - VITE_SOCKET_URL=http://localhost:5000
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/app
+      - /app/node_modules
     command: npm run dev -- --host 0.0.0.0
     depends_on:
       - backend
