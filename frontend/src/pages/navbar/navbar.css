@@ -186,6 +186,100 @@
   transform: translateY(0px);
 }
 
+/* Profile Dropdown */
+/* Profile Dropdown */
+.navbar-profile-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.navbar-profile-dropdown:hover .navbar-profile-menu,
+.navbar-profile-menu:hover {
+  opacity: 1;
+  visibility: visible;
+}
+
+.navbar-profile-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background-color: var(--color-background-light);
+  border: 2px solid var(--color-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  min-width: 180px;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: auto;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  padding: 0.5rem 0;
+}
+
+.navbar-profile-dropdown:hover .navbar-profile-menu {
+  transition-delay: 0s;
+}
+
+.navbar-profile-dropdown:not(:hover) .navbar-profile-menu {
+  transition-delay: 0.5s;
+}
+
+/* Invisible bridge to prevent menu from closing on hover gap */
+.navbar-profile-dropdown::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: -10px;
+  right: -10px;
+  height: 0.8rem;
+}
+
+.navbar-profile-menu.dark-mode {
+  background-color: var(--color-background-dark);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar-profile-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  color: black;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.navbar-profile-menu.dark-mode .navbar-profile-menu-item {
+  color: white;
+}
+
+.navbar-profile-menu-item:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.navbar-profile-menu-item:active {
+  background-color: var(--color-secondary);
+}
+
 .navbar-logout-button {
   background-color: var(--color-primary);
   color: white;
