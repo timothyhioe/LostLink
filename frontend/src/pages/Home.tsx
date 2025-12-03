@@ -40,6 +40,7 @@ interface FoundItem extends DBItem {
 }
 
 const API_BASE_URL = 'http://localhost:5000/api'
+const BASE_URL = 'http://localhost:5000'
 
 export default function Home() {
   const [items, setItems] = useState<FoundItem[]>([])
@@ -67,7 +68,7 @@ export default function Home() {
         const transformedItems: FoundItem[] = data.items.map((item: DBItem) => ({
           ...item,
           id: item._id,
-          image: item.images.length > 0 ? item.images[0].url : '',
+          image: item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : '',
           what: item.title,
           where: `Wo wurde gefunden: ${item.location.buildingName}`,
           location_display: `Wo zu finden ist: ${item.location.buildingName}`,
