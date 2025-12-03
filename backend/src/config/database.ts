@@ -1,20 +1,25 @@
-import mongoose from 'mongoose';
-
+import pg from 'pg';
 import { env } from './env';
 
-export async function connectDatabase(): Promise<typeof mongoose> {
-  if (!env.MONGODB_URI) {
-    throw new Error('Missing MongoDB connection string');
+const { Pool } = pg;
+
+export const pool = new Pool({
+  connectionString: env.POSTGRESQL_URI,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+pool.on('error', (error) => {
+  console.error('PostgreSQL pool error:', error);
+});
+
+export async function connectDatabase(): Promise<void> {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    console.log('PostgreSQL connected:', result.rows[0]);
+  } catch (error) {
+    console.error('Failed to connect to database:', error);
+    throw error;
   }
-
-  mongoose.connection.on('connected', () => {
-    console.log('MongoDB connected');
-  });
-
-  mongoose.connection.on('error', (error) => {
-    console.error('MongoDB connection error:', error);
-  });
-
-  return mongoose.connect(env.MONGODB_URI);
 }
-
