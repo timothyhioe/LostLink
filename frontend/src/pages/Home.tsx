@@ -8,12 +8,6 @@ interface ItemImage {
   uploadedAt: string
 }
 
-interface ItemLocation {
-  type: string
-  coordinates: number[]
-  buildingName: string
-}
-
 interface DBItem {
   id: string
   userId: string
