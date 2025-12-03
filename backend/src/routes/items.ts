@@ -3,7 +3,7 @@ import { uploadSingle } from "../middleware/upload";
 import { authenticate } from "../middleware/auth";
 import { storageService } from "../services/storage.service";
 import { logger } from "../utils/logger";
-import { Item } from "../models/Item";
+import { pool } from "../config/database";
 import { minioClient } from "../config/minio";
 import { env } from "../config/env";
 
@@ -98,46 +98,64 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
       });
     }
 
-    //image upload handler
-    const images = [];
-    if (req.file) {
-      const uploadResult = await storageService.uploadFile(req.file, "items");
-      images.push({
-        url: uploadResult.url,
-        filename: uploadResult.filename,
-        uploadedAt: new Date(),
-      });
-      logger.info("Image uploaded for item", {
-        filename: uploadResult.filename,
-      });
-    }
-
     // Parse tags (comma-separated string to array)
     const tagArray = tags
       ? tags.split(",").map((tag: string) => tag.trim().toLowerCase())
       : [];
 
-    const item = await Item.create({
-      userId,
-      title,
-      description,
-      type,
-      location: {
-        type: "Point",
-        coordinates: [0, 0], //default coordinates || TODO: integrate with MapBox
-        buildingName: buildingName || "Location not specified", //allow empty for lost items
-      },
-      images,
-      tags: tagArray,
-      status: "open",
-      matchCount: 0,
-    });
+    // Insert item into PostgreSQL
+    const itemResult = await pool.query(
+      `INSERT INTO items (user_id, type, title, description, building_name, coordinates, status, match_count)
+       VALUES ($1, $2, $3, $4, $5, ST_Point(0, 0)::geography, 'open', 0)
+       RETURNING id, user_id, type, title, description, building_name, status, match_count, created_at, updated_at`,
+      [userId, type, title, description, buildingName || "Location not specified"]
+    );
 
-    logger.info("Item created", { itemId: item._id, userId });
+    const item = itemResult.rows[0];
+
+    // Handle image upload
+    if (req.file) {
+      const uploadResult = await storageService.uploadFile(req.file, "items");
+      
+      // Insert image into database
+      await pool.query(
+        `INSERT INTO item_images (item_id, url, filename)
+         VALUES ($1, $2, $3)`,
+        [item.id, uploadResult.url, uploadResult.filename]
+      );
+      
+      logger.info("Image uploaded for item", {
+        filename: uploadResult.filename,
+      });
+    }
+
+    // Insert tags
+    for (const tag of tagArray) {
+      await pool.query(
+        `INSERT INTO item_tags (item_id, tag)
+         VALUES ($1, $2)`,
+        [item.id, tag]
+      );
+    }
+
+    logger.info("Item created", { itemId: item.id, userId });
 
     res.status(201).json({
       message: "Item created successfully",
-      item,
+      item: {
+        id: item.id,
+        userId: item.user_id,
+        type: item.type,
+        title: item.title,
+        description: item.description,
+        buildingName: item.building_name,
+        status: item.status,
+        matchCount: item.match_count,
+        tags: tagArray,
+        images: [],
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+      },
     });
   } catch (error) {
     logger.error("Failed to create item", { error });
@@ -213,31 +231,86 @@ router.get("/", async (req, res, next) => {
   try {
     const { type, status, search, limit = "20", page = "1" } = req.query;
 
-    // Build query
-    const query: any = {};
-
-    if (type) query.type = type;
-    if (status) query.status = status;
-
-    // Text search
-    if (search && typeof search === "string") {
-      query.$text = { $search: search };
-    }
-
     // Pagination
     const limitNum = parseInt(limit as string, 10);
     const pageNum = parseInt(page as string, 10);
-    const skip = (pageNum - 1) * limitNum;
+    const offset = (pageNum - 1) * limitNum;
 
-    // Execute query
-    const items = await Item.find(query)
-      .populate("userId", "name email")
-      .sort({ createdAt: -1 })
-      .limit(limitNum)
-      .skip(skip);
+    // Build WHERE clause
+    let whereClause = "WHERE 1=1";
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (type) {
+      whereClause += ` AND type = $${paramIndex}`;
+      params.push(type);
+      paramIndex++;
+    }
+
+    if (status) {
+      whereClause += ` AND status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    if (search && typeof search === "string") {
+      whereClause += ` AND to_tsvector('english', title || ' ' || description) @@ plainto_tsquery('english', $${paramIndex})`;
+      params.push(search);
+      paramIndex++;
+    }
+
+    // Get items
+    const itemsResult = await pool.query(
+      `SELECT i.id, i.user_id, i.type, i.title, i.description, i.building_name, i.status, i.match_count, i.created_at, i.updated_at,
+              u.name, u.email
+       FROM items i
+       LEFT JOIN users u ON i.user_id = u.id
+       ${whereClause}
+       ORDER BY i.created_at DESC
+       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...params, limitNum, offset]
+    );
 
     // Get total count
-    const total = await Item.countDocuments(query);
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as total FROM items i ${whereClause}`,
+      params
+    );
+
+    const total = parseInt(countResult.rows[0].total, 10);
+
+    // Get tags for each item
+    const items = await Promise.all(
+      itemsResult.rows.map(async (item) => {
+        const tagsResult = await pool.query(
+          `SELECT tag FROM item_tags WHERE item_id = $1`,
+          [item.id]
+        );
+        const imagesResult = await pool.query(
+          `SELECT url, filename, uploaded_at FROM item_images WHERE item_id = $1`,
+          [item.id]
+        );
+
+        return {
+          id: item.id,
+          userId: item.user_id,
+          type: item.type,
+          title: item.title,
+          description: item.description,
+          buildingName: item.building_name,
+          status: item.status,
+          matchCount: item.match_count,
+          tags: tagsResult.rows.map((r) => r.tag),
+          images: imagesResult.rows,
+          user: {
+            name: item.name,
+            email: item.email,
+          },
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+        };
+      })
+    );
 
     res.json({
       items,
@@ -285,7 +358,42 @@ router.get("/my", authenticate, async (req, res, next) => {
   try {
     const userId = req.user!.userId;
 
-    const items = await Item.find({ userId }).sort({ createdAt: -1 });
+    const itemsResult = await pool.query(
+      `SELECT i.id, i.user_id, i.type, i.title, i.description, i.building_name, i.status, i.match_count, i.created_at, i.updated_at
+       FROM items i
+       WHERE i.user_id = $1
+       ORDER BY i.created_at DESC`,
+      [userId]
+    );
+
+    // Get tags and images for each item
+    const items = await Promise.all(
+      itemsResult.rows.map(async (item) => {
+        const tagsResult = await pool.query(
+          `SELECT tag FROM item_tags WHERE item_id = $1`,
+          [item.id]
+        );
+        const imagesResult = await pool.query(
+          `SELECT url, filename, uploaded_at FROM item_images WHERE item_id = $1`,
+          [item.id]
+        );
+
+        return {
+          id: item.id,
+          userId: item.user_id,
+          type: item.type,
+          title: item.title,
+          description: item.description,
+          buildingName: item.building_name,
+          status: item.status,
+          matchCount: item.match_count,
+          tags: tagsResult.rows.map((r) => r.tag),
+          images: imagesResult.rows,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+        };
+      })
+    );
 
     res.json({ items });
   } catch (error) {
@@ -416,13 +524,51 @@ router.get("/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const item = await Item.findById(id).populate("userId", "name email");
+    const itemResult = await pool.query(
+      `SELECT i.id, i.user_id, i.type, i.title, i.description, i.building_name, i.status, i.match_count, i.created_at, i.updated_at,
+              u.name, u.email
+       FROM items i
+       LEFT JOIN users u ON i.user_id = u.id
+       WHERE i.id = $1`,
+      [id]
+    );
 
-    if (!item) {
+    if (itemResult.rows.length === 0) {
       return res.status(404).json({ message: "Item not found" });
     }
 
-    res.json({ item });
+    const item = itemResult.rows[0];
+
+    // Get tags and images
+    const tagsResult = await pool.query(
+      `SELECT tag FROM item_tags WHERE item_id = $1`,
+      [id]
+    );
+    const imagesResult = await pool.query(
+      `SELECT url, filename, uploaded_at FROM item_images WHERE item_id = $1`,
+      [id]
+    );
+
+    res.json({
+      item: {
+        id: item.id,
+        userId: item.user_id,
+        type: item.type,
+        title: item.title,
+        description: item.description,
+        buildingName: item.building_name,
+        status: item.status,
+        matchCount: item.match_count,
+        tags: tagsResult.rows.map((r) => r.tag),
+        images: imagesResult.rows,
+        user: {
+          name: item.name,
+          email: item.email,
+        },
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+      },
+    });
   } catch (error) {
     logger.error("Failed to fetch item", { error });
     next(error);
@@ -508,48 +654,112 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
     const { title, description, buildingName, tags, status } = req.body;
 
     // Find item
-    const item = await Item.findById(id);
+    const itemResult = await pool.query(
+      `SELECT id, user_id FROM items WHERE id = $1`,
+      [id]
+    );
 
-    if (!item) {
+    if (itemResult.rows.length === 0) {
       return res.status(404).json({ message: "Item not found" });
     }
 
+    const item = itemResult.rows[0];
+
     // Check ownership
-    if (item.userId.toString() !== userId) {
+    if (item.user_id !== userId) {
       return res
         .status(403)
         .json({ message: "Not authorized to update this item" });
     }
 
-    // Update fields
-    if (title) item.title = title;
-    if (description) item.description = description;
-    if (buildingName) item.location.buildingName = buildingName;
-    if (status) item.status = status;
+    // Build update query
+    const updates: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
 
-    // Update tags
-    if (tags) {
-      item.tags = tags
-        .split(",")
-        .map((tag: string) => tag.trim().toLowerCase());
+    if (title) {
+      updates.push(`title = $${paramIndex}`);
+      params.push(title);
+      paramIndex++;
+    }
+    if (description) {
+      updates.push(`description = $${paramIndex}`);
+      params.push(description);
+      paramIndex++;
+    }
+    if (buildingName) {
+      updates.push(`building_name = $${paramIndex}`);
+      params.push(buildingName);
+      paramIndex++;
+    }
+    if (status) {
+      updates.push(`status = $${paramIndex}`);
+      params.push(status);
+      paramIndex++;
+    }
+
+    // Update item
+    if (updates.length > 0) {
+      updates.push(`updated_at = CURRENT_TIMESTAMP`);
+      params.push(id);
+
+      await pool.query(
+        `UPDATE items SET ${updates.join(", ")} WHERE id = $${paramIndex}`,
+        params
+      );
     }
 
     // Handle new image upload
     if (req.file) {
       const uploadResult = await storageService.uploadFile(req.file, "items");
-      item.images.push({
-        url: uploadResult.url,
-        filename: uploadResult.filename,
-        uploadedAt: new Date(),
-      });
+      await pool.query(
+        `INSERT INTO item_images (item_id, url, filename)
+         VALUES ($1, $2, $3)`,
+        [id, uploadResult.url, uploadResult.filename]
+      );
       logger.info("New image added to item", { itemId: id });
     }
 
-    await item.save();
+    // Update tags
+    if (tags) {
+      // Delete old tags
+      await pool.query(`DELETE FROM item_tags WHERE item_id = $1`, [id]);
+
+      // Insert new tags
+      const tagArray = tags
+        .split(",")
+        .map((tag: string) => tag.trim().toLowerCase());
+      for (const tag of tagArray) {
+        await pool.query(
+          `INSERT INTO item_tags (item_id, tag) VALUES ($1, $2)`,
+          [id, tag]
+        );
+      }
+    }
+
+    // Fetch updated item
+    const updatedResult = await pool.query(
+      `SELECT id, user_id, type, title, description, building_name, status, match_count, created_at, updated_at
+       FROM items WHERE id = $1`,
+      [id]
+    );
+
+    const updatedItem = updatedResult.rows[0];
 
     res.json({
       message: "Item updated successfully",
-      item,
+      item: {
+        id: updatedItem.id,
+        userId: updatedItem.user_id,
+        type: updatedItem.type,
+        title: updatedItem.title,
+        description: updatedItem.description,
+        buildingName: updatedItem.building_name,
+        status: updatedItem.status,
+        matchCount: updatedItem.match_count,
+        createdAt: updatedItem.created_at,
+        updatedAt: updatedItem.updated_at,
+      },
     });
   } catch (error) {
     logger.error("Failed to update item", { error });
@@ -608,21 +818,32 @@ router.delete("/:id", authenticate, async (req, res, next) => {
     const userId = req.user!.userId;
 
     // Find item
-    const item = await Item.findById(id);
+    const itemResult = await pool.query(
+      `SELECT id, user_id FROM items WHERE id = $1`,
+      [id]
+    );
 
-    if (!item) {
+    if (itemResult.rows.length === 0) {
       return res.status(404).json({ message: "Item not found" });
     }
 
+    const item = itemResult.rows[0];
+
     // Check ownership
-    if (item.userId.toString() !== userId) {
+    if (item.user_id !== userId) {
       return res
         .status(403)
         .json({ message: "Not authorized to delete this item" });
     }
 
+    // Get images before deleting
+    const imagesResult = await pool.query(
+      `SELECT filename FROM item_images WHERE item_id = $1`,
+      [id]
+    );
+
     // Delete images from MinIO
-    for (const image of item.images) {
+    for (const image of imagesResult.rows) {
       try {
         await storageService.deleteFile(image.filename);
         logger.info("Image deleted from MinIO", { filename: image.filename });
@@ -634,8 +855,8 @@ router.delete("/:id", authenticate, async (req, res, next) => {
       }
     }
 
-    // Delete item from database
-    await Item.findByIdAndDelete(id);
+    // Delete item (cascade will delete tags and images)
+    await pool.query(`DELETE FROM items WHERE id = $1`, [id]);
 
     logger.info("Item deleted", { itemId: id, userId });
 

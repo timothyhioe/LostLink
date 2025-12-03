@@ -15,16 +15,20 @@ interface ItemLocation {
 }
 
 interface DBItem {
-  _id: string
-  userId: { _id: string; name: string; email: string } | string
+  id: string
+  userId: string
   type: 'lost' | 'found'
   title: string
   description: string
-  location: ItemLocation
+  buildingName: string
   images: ItemImage[]
   tags: string[]
   status: string
   matchCount: number
+  user?: {
+    name: string
+    email: string
+  }
   createdAt: string
   updatedAt: string
 }
@@ -56,7 +60,7 @@ export default function Home() {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch(`${API_BASE_URL}/items?type=found`)
+        const response = await fetch(`${API_BASE_URL}/items`)
         
         if (!response.ok) {
           throw new Error('Failed to fetch items')
@@ -67,13 +71,12 @@ export default function Home() {
         // Transform backend data to frontend format
         const transformedItems: FoundItem[] = data.items.map((item: DBItem) => ({
           ...item,
-          id: item._id,
           image: item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : '',
           what: item.title,
-          where: `Wo wurde gefunden: ${item.location.buildingName}`,
-          location_display: `Wo zu finden ist: ${item.location.buildingName}`,
+          where: `Wo wurde gefunden: ${item.buildingName}`,
+          location_display: `Wo zu finden ist: ${item.buildingName}`,
           when: `Wann wurde gefunden: ${new Date(item.createdAt).toLocaleDateString('de-DE')} ${new Date(item.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`,
-          founder: typeof item.userId === 'string' ? 'Unknown' : item.userId.name || 'Unknown'
+          founder: item.user?.name || 'Unknown'
         }))
         
         setItems(transformedItems)

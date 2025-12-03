@@ -8,7 +8,7 @@ const envSchema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
   PORT: z.coerce.number().default(5000),
-  MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
+  POSTGRESQL_URI: z.string().min(1, 'POSTGRESQL_URI is required'),
   CORS_ORIGIN: z.string().default('*'),
   JWT_SECRET: z
     .string()
@@ -23,7 +23,6 @@ const envSchema = z.object({
   MINIO_ACCESS_KEY: z.string().default('minioadmin'),
   MINIO_SECRET_KEY: z.string().default('minioadmin'),
   MINIO_BUCKET: z.string().default('lostlink-items'),
-  MINIO_PUBLIC_ENDPOINT: z.string().default('localhost'),
 });
 
 export type Env = z.infer<typeof envSchema>;

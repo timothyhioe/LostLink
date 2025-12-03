@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
-import User from '../models/User';
+import { pool } from '../config/database';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 import sendEmail from '../utils/sendEmail';
@@ -107,8 +107,12 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
+    const existingUserResult = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [normalizedEmail]
+    );
+
+    if (existingUserResult.rows.length > 0) {
       return res.status(409).json({ message: 'Email already registered' });
     }
 
@@ -118,17 +122,17 @@ router.post('/register', async (req: Request, res: Response) => {
     const verificationCode = crypto.randomInt(100000, 999999).toString();
     const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    // Create user
-    const user = await User.create({
-      name: name.trim(),
-      email: normalizedEmail,
-      passwordHash,
-      emailVerified: false,
-      verificationCode,
-      verificationCodeExpires,
-    });
+    // Create user in PostgreSQL
+    const result = await pool.query(
+      `INSERT INTO users (email, password_hash, name, email_verified, verification_code, verification_code_expires)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, email, name, email_verified`,
+      [normalizedEmail, passwordHash, name.trim(), false, verificationCode, verificationCodeExpires]
+    );
 
-    logger.info('User registered', { userId: user._id, email: user.email });
+    const user = result.rows[0];
+
+    logger.info('User registered', { userId: user.id, email: user.email });
 
     // TODO: implement real email verification via external API
     await sendEmail({
@@ -140,10 +144,10 @@ router.post('/register', async (req: Request, res: Response) => {
     return res.status(201).json({
       message: 'Account created. Please verify your email using the code sent.',
       user: {
-        id: user._id.toString(),
+        id: user.id,
         name: user.name,
         email: user.email,
-        emailVerified: user.emailVerified,
+        emailVerified: user.email_verified,
       },
     });
   } catch (error) {
@@ -231,22 +235,27 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Find user
-    const user = await User.findOne({ email: normalizedEmail });
+    // Find user from PostgreSQL
+    const result = await pool.query(
+      'SELECT id, email, password_hash, name, email_verified FROM users WHERE email = $1',
+      [normalizedEmail]
+    );
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    const user = result.rows[0];
+
     // Compare password
-    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+    const passwordMatches = await bcrypt.compare(password, user.password_hash);
 
     if (!passwordMatches) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Check email verification
-    if (!user.emailVerified) {
+    if (!user.email_verified) {
       return res.status(403).json({
         message: 'Email not verified. Please verify your email first.',
       });
@@ -255,22 +264,22 @@ router.post('/login', async (req: Request, res: Response) => {
     // Generate JWT
     const token = jwt.sign(
       {
-        userId: user._id.toString(),
+        userId: user.id,
         email: user.email,
       },
       env.JWT_SECRET as string,
       { expiresIn: '7d' }
     );
 
-    logger.info('User logged in', { userId: user._id, email: user.email });
+    logger.info('User logged in', { userId: user.id, email: user.email });
 
     return res.json({
       token,
       user: {
-        id: user._id.toString(),
+        id: user.id,
         name: user.name,
         email: user.email,
-        emailVerified: user.emailVerified,
+        emailVerified: user.email_verified,
       },
     });
   } catch (error) {
@@ -347,33 +356,37 @@ router.post('/verify-code', async (req: Request, res: Response) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail }).select(
-      '+verificationCode +verificationCodeExpires'
+    const result = await pool.query(
+      'SELECT id, email_verified, verification_code, verification_code_expires FROM users WHERE email = $1',
+      [normalizedEmail]
     );
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.emailVerified) {
+    const user = result.rows[0];
+
+    if (user.email_verified) {
       return res.status(200).json({ message: 'Email already verified' });
     }
 
     if (
-      !user.verificationCode ||
-      !user.verificationCodeExpires ||
-      user.verificationCode !== code ||
-      user.verificationCodeExpires < new Date()
+      !user.verification_code ||
+      !user.verification_code_expires ||
+      user.verification_code !== code ||
+      new Date(user.verification_code_expires) < new Date()
     ) {
       return res.status(400).json({ message: 'Invalid or expired code' });
     }
 
-    user.emailVerified = true;
-    user.verificationCode = null;
-    user.verificationCodeExpires = null;
-    await user.save();
+    // Update user as verified
+    await pool.query(
+      'UPDATE users SET email_verified = true, verification_code = null, verification_code_expires = null WHERE id = $1',
+      [user.id]
+    );
 
-    logger.info('User verified email', { userId: user._id, email: user.email });
+    logger.info('User verified email', { userId: user.id, email: normalizedEmail });
 
     return res.json({ message: 'Email verified successfully' });
   } catch (error) {
@@ -427,18 +440,23 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    const user = await User.findById(req.user.userId);
+    const result = await pool.query(
+      'SELECT id, name, email, email_verified FROM users WHERE id = $1',
+      [req.user.userId]
+    );
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const user = result.rows[0];
+
     return res.json({
       user: {
-        id: user._id.toString(),
+        id: user.id,
         name: user.name,
         email: user.email,
-        emailVerified: user.emailVerified,
+        emailVerified: user.email_verified,
       },
     });
   } catch (error) {
