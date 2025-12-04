@@ -1,17 +1,19 @@
-import type { Request, Response } from 'express';
-import express from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import type { Request, Response } from "express";
+import express from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { eq } from "drizzle-orm";
 
-import { pool } from '../config/database';
-import { env } from '../config/env';
-import { logger } from '../utils/logger';
-import sendEmail from '../utils/sendEmail';
-import { authenticate } from '../middleware/auth';
+import { db } from "../config/database";
+import { users } from "../db/schema";
+import { env } from "../config/env";
+import { logger } from "../utils/logger";
+import sendEmail from "../utils/sendEmail";
+import { authenticate } from "../middleware/auth";
 
 const router = express.Router();
-const ALLOWED_DOMAIN = '@stud.h-da.de';
+const ALLOWED_DOMAIN = "@stud.h-da.de";
 const SALT_ROUNDS = 12;
 
 /**
@@ -80,21 +82,21 @@ const SALT_ROUNDS = 12;
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/register', async (req: Request, res: Response) => {
+router.post("/register", async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
       return res
         .status(400)
-        .json({ message: 'Name, email, and password are required' });
+        .json({ message: "Name, email, and password are required" });
     }
 
     // Validate password strength
     if (password.length < 8) {
       return res
         .status(400)
-        .json({ message: 'Password must be at least 8 characters' });
+        .json({ message: "Password must be at least 8 characters" });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -107,13 +109,14 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Check if user already exists
-    const existingUserResult = await pool.query(
-      'SELECT id FROM users WHERE email = $1',
-      [normalizedEmail]
-    );
+    const existingUserResult = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, normalizedEmail))
+      .limit(1);
 
-    if (existingUserResult.rows.length > 0) {
-      return res.status(409).json({ message: 'Email already registered' });
+    if (existingUserResult.length > 0) {
+      return res.status(409).json({ message: "Email already registered" });
     }
 
     // Hash password
@@ -123,36 +126,48 @@ router.post('/register', async (req: Request, res: Response) => {
     const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Create user in PostgreSQL
-    const result = await pool.query(
-      `INSERT INTO users (email, password_hash, name, email_verified, verification_code, verification_code_expires)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, email, name, email_verified`,
-      [normalizedEmail, passwordHash, name.trim(), false, verificationCode, verificationCodeExpires]
-    );
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: normalizedEmail,
+        passwordHash,
+        name: name.trim(),
+        emailVerified: false,
+        verificationCode,
+        verificationCodeExpires,
+      })
+      .returning({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        emailVerified: users.emailVerified,
+      });
 
-    const user = result.rows[0];
+    if (!user) {
+      return res.status(500).json({ message: "Failed to create user" });
+    }
 
-    logger.info('User registered', { userId: user.id, email: user.email });
+    logger.info("User registered", { userId: user.id, email: user.email });
 
     // TODO: implement real email verification via external API
     await sendEmail({
       to: normalizedEmail,
-      subject: 'LostLink Verification Code',
+      subject: "LostLink Verification Code",
       text: `Your verification code is ${verificationCode}. It expires in 15 minutes.`,
     });
 
     return res.status(201).json({
-      message: 'Account created. Please verify your email using the code sent.',
+      message: "Account created. Please verify your email using the code sent.",
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        emailVerified: user.email_verified,
+        emailVerified: user.emailVerified,
       },
     });
   } catch (error) {
-    logger.error('Registration failed', { error });
-    return res.status(500).json({ message: 'Registration failed' });
+    logger.error("Registration failed", { error });
+    return res.status(500).json({ message: "Registration failed" });
   }
 });
 
@@ -223,41 +238,46 @@ router.post('/register', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', async (req: Request, res: Response) => {
+router.post("/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res
         .status(400)
-        .json({ message: 'Email and password are required' });
+        .json({ message: "Email and password are required" });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
 
     // Find user from PostgreSQL
-    const result = await pool.query(
-      'SELECT id, email, password_hash, name, email_verified FROM users WHERE email = $1',
-      [normalizedEmail]
-    );
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        passwordHash: users.passwordHash,
+        name: users.name,
+        emailVerified: users.emailVerified,
+      })
+      .from(users)
+      .where(eq(users.email, normalizedEmail))
+      .limit(1);
 
-    if (result.rows.length === 0) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const user = result.rows[0];
-
     // Compare password
-    const passwordMatches = await bcrypt.compare(password, user.password_hash);
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordMatches) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Check email verification
-    if (!user.email_verified) {
+    if (!user.emailVerified) {
       return res.status(403).json({
-        message: 'Email not verified. Please verify your email first.',
+        message: "Email not verified. Please verify your email first.",
       });
     }
 
@@ -268,10 +288,10 @@ router.post('/login', async (req: Request, res: Response) => {
         email: user.email,
       },
       env.JWT_SECRET as string,
-      { expiresIn: '7d' }
+      { expiresIn: "7d" }
     );
 
-    logger.info('User logged in', { userId: user.id, email: user.email });
+    logger.info("User logged in", { userId: user.id, email: user.email });
 
     return res.json({
       token,
@@ -279,12 +299,12 @@ router.post('/login', async (req: Request, res: Response) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        emailVerified: user.email_verified,
+        emailVerified: user.emailVerified,
       },
     });
   } catch (error) {
-    logger.error('Login failed', { error });
-    return res.status(500).json({ message: 'Login failed' });
+    logger.error("Login failed", { error });
+    return res.status(500).json({ message: "Login failed" });
   }
 });
 
@@ -345,53 +365,64 @@ router.post('/login', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/verify-code', async (req: Request, res: Response) => {
+router.post("/verify-code", async (req: Request, res: Response) => {
   try {
     const { email, code } = req.body;
 
     if (!email || !code) {
       return res
         .status(400)
-        .json({ message: 'Email and verification code are required' });
+        .json({ message: "Email and verification code are required" });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const result = await pool.query(
-      'SELECT id, email_verified, verification_code, verification_code_expires FROM users WHERE email = $1',
-      [normalizedEmail]
-    );
+    const [user] = await db
+      .select({
+        id: users.id,
+        emailVerified: users.emailVerified,
+        verificationCode: users.verificationCode,
+        verificationCodeExpires: users.verificationCodeExpires,
+      })
+      .from(users)
+      .where(eq(users.email, normalizedEmail))
+      .limit(1);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const user = result.rows[0];
-
-    if (user.email_verified) {
-      return res.status(200).json({ message: 'Email already verified' });
+    if (user.emailVerified) {
+      return res.status(200).json({ message: "Email already verified" });
     }
 
     if (
-      !user.verification_code ||
-      !user.verification_code_expires ||
-      user.verification_code !== code ||
-      new Date(user.verification_code_expires) < new Date()
+      !user.verificationCode ||
+      !user.verificationCodeExpires ||
+      user.verificationCode !== code ||
+      new Date(user.verificationCodeExpires) < new Date()
     ) {
-      return res.status(400).json({ message: 'Invalid or expired code' });
+      return res.status(400).json({ message: "Invalid or expired code" });
     }
 
     // Update user as verified
-    await pool.query(
-      'UPDATE users SET email_verified = true, verification_code = null, verification_code_expires = null WHERE id = $1',
-      [user.id]
-    );
+    await db
+      .update(users)
+      .set({
+        emailVerified: true,
+        verificationCode: null, // Remove code after verification
+        verificationCodeExpires: null,
+      })
+      .where(eq(users.id, user.id));
 
-    logger.info('User verified email', { userId: user.id, email: normalizedEmail });
+    logger.info("User verified email", {
+      userId: user.id,
+      email: normalizedEmail,
+    });
 
-    return res.json({ message: 'Email verified successfully' });
+    return res.json({ message: "Email verified successfully" });
   } catch (error) {
-    logger.error('Email verification failed', { error });
-    return res.status(500).json({ message: 'Verification failed' });
+    logger.error("Email verification failed", { error });
+    return res.status(500).json({ message: "Verification failed" });
   }
 });
 
@@ -434,35 +465,39 @@ router.post('/verify-code', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/me', authenticate, async (req: Request, res: Response) => {
+router.get("/me", authenticate, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: 'Not authenticated' });
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
-    const result = await pool.query(
-      'SELECT id, name, email, email_verified FROM users WHERE id = $1',
-      [req.user.userId]
-    );
+    const [user] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        emailVerified: users.emailVerified,
+      })
+      .from(users)
+      .where(eq(users.id, req.user.userId))
+      .limit(1);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-
-    const user = result.rows[0];
 
     return res.json({
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        emailVerified: user.email_verified,
+        emailVerified: user.emailVerified,
       },
     });
   } catch (error) {
-    logger.error('Get user failed', { error });
-    return res.status(500).json({ message: 'Failed to get user' });
+    logger.error("Get user failed", { error });
+    return res.status(500).json({ message: "Failed to get user" });
   }
 });
 
-export {router as authRouter}
+export { router as authRouter };
