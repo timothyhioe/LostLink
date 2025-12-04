@@ -22,8 +22,8 @@ The entire stack is TypeScript-based—Node/Express services share a unified typ
 
 ```
 ┌─────────────┐         ┌──────────────────┐         ┌─────────────┐
-│   React     │◄──────► │   Node.js API    │◄──────► │   MongoDB   │
-│   Frontend  │         │   (Express)      │         │   Atlas     │
+│   React     │◄──────► │   Node.js API    │◄──────► │  PostgreSQL │
+│   Frontend  │         │   (Express)      │         │    Neon     │
 │             │         │                  │         └─────────────┘
 │  - Leaflet  │         │  REST + WebSocket│
 │  - Tailwind │         │                  │         ┌─────────────┐
