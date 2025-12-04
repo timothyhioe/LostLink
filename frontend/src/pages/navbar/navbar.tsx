@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './navbar.css'
+import ItemPostForm from './itemPostForm/itemPostForm'
 import messageIcon from '../../assets/Navbar/message_.png'
 import messageIconWhite from '../../assets/Navbar/message-white.png'
 import notificationIcon from '../../assets/Navbar/notification_.png'
@@ -15,10 +17,14 @@ interface NavbarProps {
   onLogoClick?: () => void
   isDarkMode: boolean
   onThemeToggle: (isDark: boolean) => void
+  onItemPosted?: () => void
 }
 
-export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMode, onThemeToggle }: NavbarProps) {
+export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMode, onThemeToggle, onItemPosted }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isPostFormOpen, setIsPostFormOpen] = useState(false)
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
+  const navigate = useNavigate()
 
   // Handle body scroll when menu is open
   useEffect(() => {
@@ -51,11 +57,36 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
     onLogout()
   }
 
+  const handlePostClick = () => {
+    setIsPostFormOpen(true)
+    handleCloseMenu()
+  }
+
+  const handlePostFormClose = () => {
+    setIsPostFormOpen(false)
+  }
+
+  const handlePostSuccess = () => {
+    if (onItemPosted) {
+      onItemPosted()
+    }
+  }
+
   const handleLogoClick = () => {
     handleCloseMenu()
     if (onLogoClick) {
       onLogoClick()
     }
+  }
+
+  const handleProfileClick = () => {
+    setIsProfileDropdownOpen(!isProfileDropdownOpen)
+  }
+
+  const handleMyPostsClick = () => {
+    navigate('/my-posts')
+    setIsProfileDropdownOpen(false)
+    handleCloseMenu()
   }
 
   return (
@@ -76,7 +107,12 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
           </div>
 
           <div className="navbar-right">
-            <button className="navbar-post-button">Post</button>
+            <button 
+              className="navbar-post-button"
+              onClick={handlePostClick}
+            >
+              Post
+            </button>
 
             <button 
               className="navbar-theme-toggle"
@@ -98,9 +134,25 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
               <img src={isDarkMode ? notificationIconWhite : notificationIcon} alt="Notifications" />
             </button>
             
-            <button className="navbar-profile-btn" title="Profile">
-              <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" />
-            </button>
+            <div className="navbar-profile-container">
+              <button 
+                className="navbar-profile-btn" 
+                title="Profile"
+                onClick={handleProfileClick}
+              >
+                <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" />
+              </button>
+              {isProfileDropdownOpen && (
+                <div className={`navbar-profile-dropdown ${isDarkMode ? 'dark-mode' : ''}`}>
+                  <button 
+                    className="dropdown-item"
+                    onClick={handleMyPostsClick}
+                  >
+                    My Posts
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button 
               className="navbar-logout-button"
@@ -127,7 +179,12 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
           {/* Close button */}
           
 
-          <button className="navbar-post-button navbar-mobile-item">Post</button>
+          <button 
+            className="navbar-post-button navbar-mobile-item"
+            onClick={handlePostClick}
+          >
+            Post
+          </button>
           <button 
             className="navbar-theme-toggle navbar-mobile-item"
             onClick={() => onThemeToggle(!isDarkMode)}
@@ -146,8 +203,12 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
           <button className="navbar-notification-btn navbar-mobile-item" title="Notifications">
             <img src={isDarkMode ? notificationIconWhite : notificationIcon} alt="Notifications" /> Notifications
           </button>
-          <button className="navbar-profile-btn navbar-mobile-item" title="Profile">
-            <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" /> Profile
+          <button 
+            className="navbar-profile-btn navbar-mobile-item" 
+            title="Profile"
+            onClick={handleMyPostsClick}
+          >
+            <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" /> My Posts
           </button>
           <button 
             className="navbar-logout-button navbar-mobile-item"
@@ -157,6 +218,13 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
           </button>
         </div>
       </div>
+
+      <ItemPostForm 
+        isOpen={isPostFormOpen} 
+        onClose={handlePostFormClose} 
+        isDarkMode={isDarkMode}
+        onPostSuccess={handlePostSuccess}
+      />
     </>
   )
 }

@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import './home.css'
-import Navbar from './navbar/navbar'
+import Navbar from '../navbar/navbar'
 
 interface ItemImage {
   url: string
@@ -49,40 +49,40 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
 
   // Fetch items from backend
-  const fetchItems = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const response = await fetch(`${API_BASE_URL}/items`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch items')
-      }
-      
-      const data = await response.json()
-      
-      // Transform backend data to frontend format
-      const transformedItems: FoundItem[] = data.items.map((item: DBItem) => ({
-        ...item,
-        image: item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : '',
-        what: item.title,
-        where: `Wo wurde gefunden: ${item.buildingName}`,
-        location_display: `Wo zu finden ist: ${item.buildingName}`,
-        when: `Wann wurde gefunden: ${new Date(item.createdAt).toLocaleDateString('de-DE')} ${new Date(item.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`,
-        founder: item.user?.name || 'Unknown'
-      }))
-      
-      setItems(transformedItems)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred'
-      setError(message)
-      console.error('Error fetching items:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await fetch(`${API_BASE_URL}/items`)
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch items')
+        }
+        
+        const data = await response.json()
+        
+        // Transform backend data to frontend format
+        const transformedItems: FoundItem[] = data.items.map((item: DBItem) => ({
+          ...item,
+          image: item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : '',
+          what: item.title,
+          where: `Wo wurde gefunden: ${item.buildingName}`,
+          location_display: `Wo zu finden ist: ${item.buildingName}`,
+          when: `Wann wurde gefunden: ${new Date(item.createdAt).toLocaleDateString('de-DE')} ${new Date(item.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`,
+          founder: item.user?.name || 'Unknown'
+        }))
+        
+        setItems(transformedItems)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'An error occurred'
+        setError(message)
+        console.error('Error fetching items:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchItems()
   }, [])
 
@@ -119,14 +119,7 @@ export default function Home() {
 
   return (
     <div className={`home-page ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
-      <Navbar 
-        onMessageClick={handleMessageClick} 
-        onLogout={handleLogout} 
-        onLogoClick={handleLogoClick} 
-        isDarkMode={isDarkMode} 
-        onThemeToggle={handleThemeToggle}
-        onItemPosted={fetchItems}
-      />
+      <Navbar onMessageClick={handleMessageClick} onLogout={handleLogout} onLogoClick={handleLogoClick} isDarkMode={isDarkMode} onThemeToggle={handleThemeToggle} />
 
       {/* Main content */}
       <div className={`home-main-content ${isChatOpen ? 'home-chat-open' : ''}`}>

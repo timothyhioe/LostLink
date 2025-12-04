@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Home from './pages/Home'
+import Home from './pages/home/home'
 import Login from './pages/auth/login/login'
+import MyPosts from './pages/navbar/myPosts/myPosts'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('authToken')
@@ -40,6 +41,11 @@ export default function App() {
         <Route path="/" element={
           <ProtectedRoute>
             <Home />
+          </ProtectedRoute>
+        } />
+        <Route path="/my-posts" element={
+          <ProtectedRoute>
+            <MyPosts />
           </ProtectedRoute>
         } />
       </Routes>
