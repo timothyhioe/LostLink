@@ -67,10 +67,6 @@ export default function MyItems() {
     navigate('/')
   }
 
-  const handleMessageClick = () => {
-    // Handle message click
-  }
-
   const fetchMyItems = async () => {
     try {
       setLoading(true)
@@ -154,7 +150,6 @@ export default function MyItems() {
   return (
     <div className={`my-items-page ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       <Navbar
-        onMessageClick={handleMessageClick}
         onLogout={handleLogout}
         onLogoClick={handleLogoClick}
         isDarkMode={isDarkMode}
