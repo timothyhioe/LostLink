@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './navbar.css'
 import ItemPostForm from './itemPostForm/itemPostForm'
+import NavbarChat from '../../components/NavbarChat/NavbarChat'
+import { useChat } from '../../contexts/ChatContext'
+
+/* eslint-disable react-hooks/set-state-in-effect */
 import messageIcon from '../../assets/Navbar/message_.png'
 import messageIconWhite from '../../assets/Navbar/message-white.png'
 import notificationIcon from '../../assets/Navbar/notification_.png'
@@ -12,7 +16,6 @@ import darkModeIcon from '../../assets/Navbar/dark-mode_.png'
 import lightModeIconWhite from '../../assets/Navbar/light-mode-white.png'
 
 interface NavbarProps {
-  onMessageClick: () => void
   onLogout: () => void
   onLogoClick?: () => void
   isDarkMode: boolean
@@ -20,11 +23,24 @@ interface NavbarProps {
   onItemPosted?: () => void
 }
 
-export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMode, onThemeToggle, onItemPosted }: NavbarProps) {
+export default function Navbar({ onLogout, onLogoClick, isDarkMode, onThemeToggle, onItemPosted }: NavbarProps) {
+  const { selectedConversationId, unreadNotifications, chatOpenTrigger } = useChat()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isPostFormOpen, setIsPostFormOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
   const navigate = useNavigate()
+
+  // Calculate total unread notifications
+  const unreadCount = Object.keys(unreadNotifications).length
+
+  // Auto-open chat when a conversation is selected or when trigger changes
+   
+  useEffect(() => {
+    if (selectedConversationId || chatOpenTrigger > 0) {
+      setIsChatOpen(true)
+    }
+  }, [selectedConversationId, chatOpenTrigger])
 
   // Handle body scroll when menu is open
   useEffect(() => {
@@ -48,7 +64,7 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
   }
 
   const handleMessageClickWrapper = () => {
-    onMessageClick()
+    setIsChatOpen(prev => !prev)
     handleCloseMenu()
   }
 
@@ -124,10 +140,13 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
             
             <button 
               className="navbar-message-btn"
-              onClick={onMessageClick}
+              onClick={handleMessageClickWrapper}
               title="Messages"
             >
               <img src={isDarkMode ? messageIconWhite : messageIcon} alt="Messages" />
+              {unreadCount > 0 && (
+                <span className="navbar-message-badge">{unreadCount}</span>
+              )}
             </button>
             
             <button className="navbar-notification-btn" title="Notifications">
@@ -224,6 +243,12 @@ export default function Navbar({ onMessageClick, onLogout, onLogoClick, isDarkMo
         onClose={handlePostFormClose} 
         isDarkMode={isDarkMode}
         onPostSuccess={handlePostSuccess}
+      />
+
+      <NavbarChat 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)}
+        isDarkMode={isDarkMode}
       />
     </>
   )

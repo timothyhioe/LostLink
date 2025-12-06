@@ -102,6 +102,17 @@
   margin-left: 3vw;
 }
 
+.my-item-type-label {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-primary);
+
+}
+
+.my-items-page.dark-mode .my-item-type-label {
+  color: #e0e0e0;
+}
+
 .my-item-what {
   font-size: 2rem;
   font-weight: 700;
@@ -145,6 +156,28 @@
   gap: 2vh;
   align-items: flex-start;
   width: 10vw;
+}
+
+.my-item-founder-label {
+  font-size: 1.2rem;
+  color: black;
+  margin: 0;
+  font-weight: 500;
+}
+
+.my-items-page.dark-mode .my-item-founder-label {
+  color: white;
+}
+
+.my-item-founder-name {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: black;
+  margin: 0;
+}
+
+.my-items-page.dark-mode .my-item-founder-name {
+  color: white;
 }
 
 .my-item-type-badge {
