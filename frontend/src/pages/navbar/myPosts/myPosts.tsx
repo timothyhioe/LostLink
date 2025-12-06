@@ -67,10 +67,6 @@ export default function MyItems() {
     navigate('/')
   }
 
-  const handleMessageClick = () => {
-    // Handle message click
-  }
-
   const fetchMyItems = async () => {
     try {
       setLoading(true)
@@ -154,7 +150,6 @@ export default function MyItems() {
   return (
     <div className={`my-items-page ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       <Navbar
-        onMessageClick={handleMessageClick}
         onLogout={handleLogout}
         onLogoClick={handleLogoClick}
         isDarkMode={isDarkMode}
@@ -187,6 +182,7 @@ export default function MyItems() {
               </div>
 
               <div className="my-item-details">
+                <p className="my-item-type-label">{item.type === 'lost' ? 'Verloren' : 'Gefunden'}</p>
                 <h3 className="my-item-what">{item.what}</h3>
                 <p className="my-item-description">Description: {item.description}</p>
                 <p className="my-item-where">{item.where}</p>
@@ -195,7 +191,6 @@ export default function MyItems() {
               </div>
 
               <div className="my-item-right">
-                <span className="my-item-type-badge">{item.type.toUpperCase()}</span>
                 <button
                   className="my-item-delete-button"
                   onClick={() => handleDeleteItem(item.id)}

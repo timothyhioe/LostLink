@@ -100,13 +100,6 @@ export default function Home() {
     localStorage.setItem('theme', isDark ? 'dark' : 'light')
   }
 
-  const handleMessageClick = () => {
-    setIsChatOpen(!isChatOpen)
-    if (isChatOpen) {
-      setSelectedChat(null)
-    }
-  }
-
   const handleContactButton = (item: FoundItem) => {
     setSelectedChat(item)
     setIsChatOpen(true)
@@ -120,7 +113,6 @@ export default function Home() {
   return (
     <div className={`home-page ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       <Navbar 
-        onMessageClick={handleMessageClick} 
         onLogout={handleLogout} 
         onLogoClick={handleLogoClick} 
         isDarkMode={isDarkMode} 

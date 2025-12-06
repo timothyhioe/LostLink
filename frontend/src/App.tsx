@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Home from './pages/home/home'
 import Login from './pages/auth/login/login'
 import MyPosts from './pages/navbar/myPosts/myPosts'
+import { ChatProvider } from './contexts/ChatContext'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('authToken')
@@ -31,24 +32,26 @@ function LoginRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={
-          <LoginRoute>
-            <Login />
-          </LoginRoute>
-        } />
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        } />
-        <Route path="/my-posts" element={
-          <ProtectedRoute>
-            <MyPosts />
-          </ProtectedRoute>
-        } />
-      </Routes>
-    </BrowserRouter>
+    <ChatProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={
+            <LoginRoute>
+              <Login />
+            </LoginRoute>
+          } />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          } />
+          <Route path="/my-posts" element={
+            <ProtectedRoute>
+              <MyPosts />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </BrowserRouter>
+    </ChatProvider>
   )
 }

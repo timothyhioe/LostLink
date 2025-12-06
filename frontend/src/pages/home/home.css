@@ -101,7 +101,17 @@
   display: flex;
   flex-direction: column;
   gap: 1vh;
-  margin-left: 3vw;
+  margin-left: 4vw;
+}
+
+.home-item-type-label {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.home-page.dark-mode .home-item-type-label {
+  color: #e0e0e0;
 }
 
 .home-item-what {
@@ -184,9 +194,15 @@
   white-space: nowrap;
 }
 
-.home-contact-button:hover {
+.home-contact-button:hover:not(:disabled) {
   transform: translateY(-1.5px);
   box-shadow: 0 2px 6px rgba(250, 205, 0, 0.15);
+}
+
+.home-contact-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .home-contact-button:active {
