@@ -824,7 +824,15 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
       return res.status(400).json({ message: "Item ID is required" });
     }
     const userId = req.user!.userId;
-    const { title, description, buildingName, tags, status } = req.body;
+    const {
+      title,
+      description,
+      buildingName,
+      tags,
+      status,
+      longitude,
+      latitude,
+    } = req.body;
 
     // Find item
     const [item] = await db
@@ -851,6 +859,50 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
       logger.info("New image added to item", { itemId: id });
     }
 
+    /*
+    Coordinates logic goes here
+    */
+
+    // For final coordinates that will be inputted to DB
+    let finLong: number | null = null;
+    let finLat: number | null = null;
+
+    // Prio 1: get coordinates from inputted BuildingName
+    if (buildingName) {
+      const buildingCoords =
+        buildingService.getBuildingCoordinates(buildingName);
+      if (buildingCoords) {
+        finLong = buildingCoords.lng;
+        finLat = buildingCoords.lat;
+      } else {
+        return res.status(400).json({
+          message: `Building "${buildingName}" not found.`,
+        });
+      }
+    }
+
+    // Prio 2 (fallback option): get coordinates directly from map picker
+    else if (longitude && latitude) {
+      finLong = parseFloat(longitude);
+      finLat = parseFloat(latitude);
+
+      // Validate that coordinates are valid numbers
+      if (isNaN(finLong) || isNaN(finLat)) {
+        return res.status(400).json({
+          message:
+            "Invalid coordinates: longitude and latitude must be valid numbers",
+        });
+      }
+    }
+
+    // 'found' items must have location, only optinal for 'lost' items
+    else if (type === "found") {
+      return res.status(400).json({
+        message:
+          "Location required: provide buildingName or select location from map",
+      });
+    }
+
     // Use transaction for updates
     const updatedItem = await db.transaction(async (tx) => {
       // Build update object
@@ -864,6 +916,13 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
           | "matched"
           | "resolved"
           | "closed";
+
+      // Update coordinates if updated
+      if (finalLng !== null && finalLat !== null) {
+        (
+          updateData as any
+        ).coordinates = sql`ST_Point(${finLong}, ${finLat})::geography`;
+      }
 
       // Update item if there are changes
       if (Object.keys(updateData).length > 0) {
