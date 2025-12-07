@@ -918,7 +918,7 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
           | "closed";
 
       // Update coordinates if updated
-      if (finalLng !== null && finalLat !== null) {
+      if (finLong !== null && finLat !== null) {
         (
           updateData as any
         ).coordinates = sql`ST_Point(${finLong}, ${finLat})::geography`;
