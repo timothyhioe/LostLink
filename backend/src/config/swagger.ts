@@ -156,6 +156,10 @@ const options: swaggerJsdoc.Options = {
         description: "Lost and found items management",
       },
       {
+        name: "Buildings",
+        description: "HDA buildings information and lookup",
+      },
+      {
         name: "Health",
         description: "Health check endpoints",
       },
