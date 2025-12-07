@@ -836,7 +836,7 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
 
     // Find item
     const [item] = await db
-      .select({ id: items.id, userId: items.userId })
+      .select({ id: items.id, userId: items.userId, type: items.type })
       .from(items)
       .where(eq(items.id, id))
       .limit(1);
@@ -896,7 +896,7 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
     }
 
     // 'found' items must have location, only optinal for 'lost' items
-    else if (type === "found") {
+    else if (item.type === "found") {
       return res.status(400).json({
         message:
           "Location required: provide buildingName or select location from map",
