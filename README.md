@@ -50,6 +50,12 @@ npm run dev                   # runs ts-node-dev (localhost:5000)
 
 ---
 
+## Testing
+
+See `docs/TESTING.md` for how to configure PostgreSQL locally and run the Vitest integration suite in `backend/tests/`.
+
+---
+
 ## Docker Compose Workflow
 
 Requirements: Docker + Docker Compose v2.
