@@ -89,25 +89,25 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               description: "Item description",
             },
-            location: {
+            buildingName: {
+              type: "string",
+              description: "Building or location name",
+            },
+            coordinates: {
               type: "object",
               properties: {
-                type: {
-                  type: "string",
-                  enum: ["Point"],
+                longitude: {
+                  type: "number",
+                  description: "Longitude coordinate (WGS84)",
+                  example: 6.767676767,
                 },
-                coordinates: {
-                  type: "array",
-                  items: { type: "number" },
-                  minItems: 2,
-                  maxItems: 2,
-                  description: "[longitude, latitude]",
-                },
-                buildingName: {
-                  type: "string",
-                  description: "Building or location name",
+                latitude: {
+                  type: "number",
+                  description: "Latitude coordinate (WGS84)",
+                  example: 2.121212121,
                 },
               },
+              description: "Geographic coordinates of the item location",
             },
             images: {
               type: "array",

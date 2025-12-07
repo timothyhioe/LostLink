@@ -358,6 +358,8 @@ router.get("/", async (req, res, next) => {
         updatedAt: items.updatedAt,
         userName: users.name,
         userEmail: users.email,
+        longitude: sql<number>`ST_X(${items.coordinates}::geometry)`,
+        latitude: sql<number>`ST_Y(${items.coordinates}::geometry)`,
       })
       .from(items)
       .leftJoin(users, eq(items.userId, users.id))
@@ -429,6 +431,10 @@ router.get("/", async (req, res, next) => {
       matchCount: item.matchCount,
       tags: tagsByItem.get(item.id) || [],
       images: imagesByItem.get(item.id) || [],
+      coordinates: {
+        longitude: item.longitude,
+        latitude: item.latitude,
+      },
       user: {
         name: item.userName,
         email: item.userEmail,
@@ -694,6 +700,8 @@ router.get("/:id", async (req, res, next) => {
         updatedAt: items.updatedAt,
         userName: users.name,
         userEmail: users.email,
+        longitude: sql<number>`ST_X(${items.coordinates}::geometry)`,
+        latitude: sql<number>`ST_Y(${items.coordinates}::geometry)`,
       })
       .from(items)
       .leftJoin(users, eq(items.userId, users.id))
@@ -731,6 +739,10 @@ router.get("/:id", async (req, res, next) => {
         matchCount: item.matchCount,
         tags: tagsResult.map((r) => r.tag),
         images: imagesResult,
+        coordinates: {
+          longitude: item.longitude,
+          latitude: item.latitude,
+        },
         user: {
           name: item.userName,
           email: item.userEmail,
