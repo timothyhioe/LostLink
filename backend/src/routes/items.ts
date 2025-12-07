@@ -8,6 +8,7 @@ import { items, itemImages, itemTags, users } from "../db/schema";
 import { sql, eq, and, desc, count, or, like, inArray } from "drizzle-orm";
 import { minioClient } from "../config/minio";
 import { env } from "../config/env";
+import { buildingService } from "../services/building.service";
 
 const router = Router();
 
@@ -77,7 +78,15 @@ const router = Router();
 router.post("/", authenticate, uploadSingle, async (req, res, next) => {
   try {
     const userId = req.user!.userId;
-    const { title, description, type, buildingName, tags } = req.body;
+    const {
+      title,
+      description,
+      type,
+      buildingName,
+      tags,
+      latitude,
+      longitude,
+    } = req.body;
 
     //validate required fields
     if (!title || !description || !type) {
@@ -114,8 +123,61 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
       });
     }
 
+    /*
+    Coordinates logic goes here
+    */
+
+    // For final coordinates that will be inputted to DB
+    let finLong: number | null = null;
+    let finLat: number | null = null;
+
+    // Prio 1: get coordinates from inputted BuildingName
+    if (buildingName) {
+      const buildingCoords =
+        buildingService.getBuildingCoordinates(buildingName);
+      if (buildingCoords) {
+        finLong = buildingCoords.lng;
+        finLat = buildingCoords.lat;
+      } else {
+        return res.status(400).json({
+          message: `Building "${buildingName}" not found.`,
+        });
+      }
+    }
+
+    // Prio 2 (fallback option): get coordinates directly from map picker
+    else if (longitude && latitude) {
+      finLong = parseFloat(longitude);
+      finLat = parseFloat(latitude);
+
+      // Validate that coordinates are valid numbers
+      if (isNaN(finLong) || isNaN(finLat)) {
+        return res.status(400).json({
+          message:
+            "Invalid coordinates: longitude and latitude must be valid numbers",
+        });
+      }
+    }
+
+    // 'found' items must have location, only optinal for 'lost' items
+    else if (type === "found") {
+      return res.status(400).json({
+        message:
+          "Location required: provide buildingName or select location from map",
+      });
+    }
+
     // Use transaction for item, image, and tags
     const result = await db.transaction(async (tx) => {
+      // Build coordinates SQL via drizzle and postGIS
+      let coordinatesSql;
+      if (finLong !== null && finLat !== null) {
+        coordinatesSql = sql`ST_Point(${finLong}, ${finLat})::geography`;
+      } else {
+        // Fallback to C10
+        coordinatesSql = sql`ST_Point(8.638193032596806, 49.8673112616893)::geography`;
+      }
+
       // Insert item with PostGIS placeholder
       const [item] = await tx
         .insert(items)
@@ -124,8 +186,8 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
           type: type as "lost" | "found",
           title,
           description,
-          buildingName: buildingName || "Location not specified", // Keep it optional for 'found' items
-          coordinates: sql`ST_Point(0, 0)::geography`,
+          buildingName: buildingName || null, // Keep it optional for 'found' items
+          coordinates: coordinatesSql,
           status: "open",
           matchCount: 0,
         })
