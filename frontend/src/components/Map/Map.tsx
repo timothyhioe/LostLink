@@ -45,7 +45,7 @@ export function Map({ className, style, onMapLoad }: MapProps) {
 
     // Call if provided
     if (onMapLoad) {
-      map.current.on("Load", () => {
+      map.current.on("load", () => {
         onMapLoad(map.current!);
       });
     }
