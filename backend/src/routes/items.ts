@@ -929,16 +929,19 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
           | "resolved"
           | "closed";
 
-      // Update coordinates if updated
-      if (finLong !== null && finLat !== null) {
-        (
-          updateData as any
-        ).coordinates = sql`ST_Point(${finLong}, ${finLat})::geography`;
-      }
-
       // Update item if there are changes
       if (Object.keys(updateData).length > 0) {
         await tx.update(items).set(updateData).where(eq(items.id, id));
+      }
+
+      // Update coordinates (seperately) if updated
+      if (finLong !== null && finLat !== null) {
+        await tx
+          .update(items)
+          .set({
+            coordinates: sql`ST_Point(${finLong}, ${finLat})::geography`,
+          })
+          .where(eq(items.id, id));
       }
 
       // Handle new image upload
