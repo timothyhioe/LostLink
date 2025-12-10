@@ -1,0 +1,11 @@
+/* MAP COMPONENT */
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.map-container-fullscreen {
+  width: 100vw;
+  height: 100vh;
+}
