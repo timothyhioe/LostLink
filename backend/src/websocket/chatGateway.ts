@@ -1,5 +1,8 @@
 import type { Server, Socket } from 'socket.io'
 import { logger } from '../utils/logger'
+import { db } from '../config/database'
+import { chatMessages } from '../db/schema/chat'
+import { and, eq, or, desc } from 'drizzle-orm'
 
 interface ChatMessage {
   id: string
@@ -13,11 +16,77 @@ interface ChatMessage {
 
 // Store active connections
 const userConnections: Map<string, string> = new Map()
-// Store chat history temporarily (in production, use database)
-const messageHistory: Map<string, ChatMessage[]> = new Map()
 
 function getRoomId(userId1: string, userId2: string): string {
   return [userId1, userId2].sort().join('-')
+}
+
+// Load chat history from database
+async function loadChatHistory(userId1: string, userId2: string): Promise<ChatMessage[]> {
+  try {
+    logger.info(`[Chat] Loading chat history for users: ${userId1} and ${userId2}`)
+    
+    const messages = await db
+      .select()
+      .from(chatMessages)
+      .where(
+        or(
+          and(
+            eq(chatMessages.senderId, userId1),
+            eq(chatMessages.recipientId, userId2)
+          ),
+          and(
+            eq(chatMessages.senderId, userId2),
+            eq(chatMessages.recipientId, userId1)
+          )
+        )
+      )
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(100)
+      .execute()
+
+    logger.info(`[Chat] Retrieved ${messages.length} messages from database`)
+    
+    // Reverse to get chronological order
+    return messages.reverse().map(msg => ({
+      id: msg.id,
+      senderId: msg.senderId,
+      senderName: '', // Will be filled by frontend
+      recipientId: msg.recipientId,
+      content: msg.content,
+      timestamp: msg.createdAt.toISOString(),
+      read: msg.read ?? false
+    }))
+  } catch (error) {
+    logger.error('[Chat] Error loading chat history from database:', error)
+    logger.error('[Chat] Error details:', { userId1, userId2, errorMessage: error instanceof Error ? error.message : String(error) })
+    return []
+  }
+}
+
+// Save message to database
+async function saveMessageToDatabase(message: ChatMessage): Promise<void> {
+  try {
+    logger.info(`[Chat] Attempting to save message: senderId=${message.senderId}, recipientId=${message.recipientId}, content="${message.content.substring(0, 50)}"`)
+    
+    const result = await db.insert(chatMessages).values({
+      senderId: message.senderId,
+      recipientId: message.recipientId,
+      content: message.content,
+      read: message.read,
+      createdAt: new Date(message.timestamp),
+      updatedAt: new Date(message.timestamp)
+    }).returning()
+    
+    logger.info(`[Chat] Message saved successfully to database:`, result)
+  } catch (error) {
+    logger.error('[Chat] Error saving message to database:', error)
+    logger.error('[Chat] Error details:', { 
+      message: error instanceof Error ? error.message : String(error),
+      senderId: message.senderId,
+      recipientId: message.recipientId
+    })
+  }
 }
 
 export function registerChatGateway(io: Server): void {
@@ -34,7 +103,7 @@ export function registerChatGateway(io: Server): void {
     }
 
     // Handle user joining a chat room
-    socket.on('join_chat', (data: { recipientId: string; recipientName: string }) => {
+    socket.on('join_chat', async (data: { recipientId: string; recipientName: string }) => {
       const { recipientId, recipientName } = data
 
       logger.info(`[SOCKET.IO] join_chat event - from: ${userId}, to: ${recipientId}`)
@@ -50,15 +119,10 @@ export function registerChatGateway(io: Server): void {
 
       logger.info(`[SOCKET.IO] User ${userId} joined room: ${roomId}`)
 
-      // Send message history if it exists
-      if (messageHistory.has(roomId)) {
-        const history = messageHistory.get(roomId)!
-        logger.info(`[SOCKET.IO] Sending message history to ${userId} - ${history.length} messages`)
-        socket.emit('message_history', history)
-      } else {
-        logger.info(`[SOCKET.IO] No message history for room ${roomId}`)
-        socket.emit('message_history', [])
-      }
+      // Load message history from database
+      const history = await loadChatHistory(userId, recipientId)
+      logger.info(`[SOCKET.IO] Sending message history to ${userId} - ${history.length} messages`)
+      socket.emit('message_history', history)
 
       // Notify the other user that someone joined
       logger.info(`[SOCKET.IO] Broadcasting user_joined to room ${roomId}`)
@@ -69,7 +133,7 @@ export function registerChatGateway(io: Server): void {
     })
 
     // Handle incoming messages
-    socket.on('send_message', (data: {
+    socket.on('send_message', async (data: {
       senderId: string;
       senderName: string;
       recipientId: string;
@@ -89,7 +153,7 @@ export function registerChatGateway(io: Server): void {
       const roomId = getRoomId(senderId, recipientId)
 
       const message: ChatMessage = {
-        id: `${Date.now()}-${Math.random()}`,
+        id: `msg-${Date.now()}`, // Temporary ID for frontend, database generates real UUID
         senderId,
         senderName,
         recipientId,
@@ -98,13 +162,10 @@ export function registerChatGateway(io: Server): void {
         read: false
       }
 
-      // Store message history
-      if (!messageHistory.has(roomId)) {
-        messageHistory.set(roomId, [])
-      }
-      messageHistory.get(roomId)!.push(message)
+      // Save message to database
+      await saveMessageToDatabase(message)
 
-      logger.info(`[SOCKET.IO] Message stored - roomId: ${roomId}, messageId: ${message.id}`)
+      logger.info(`[SOCKET.IO] Message saved to database - roomId: ${roomId}, messageId: ${message.id}`)
       logger.info(`[SOCKET.IO] Broadcasting receive_message to room: ${roomId}`)
 
       // Emit to all users in the room
@@ -126,17 +187,22 @@ export function registerChatGateway(io: Server): void {
     })
 
     // Handle marking messages as read
-    socket.on('mark_as_read', (data: { roomId: string }) => {
+    socket.on('mark_as_read', async (data: { roomId: string }) => {
       const { roomId } = data
 
       logger.info(`[SOCKET.IO] mark_as_read - roomId: ${roomId}`)
 
-      if (messageHistory.has(roomId)) {
-        const messages = messageHistory.get(roomId)!
-        messages.forEach(msg => {
-          msg.read = true
-        })
-        logger.info(`[SOCKET.IO] Marked ${messages.length} messages as read`)
+      try {
+        // Mark all messages sent to current user in this room as read
+        await db
+          .update(chatMessages)
+          .set({ read: true })
+          .where(eq(chatMessages.recipientId, userId))
+          .execute()
+
+        logger.info(`[SOCKET.IO] Marked messages as read in database for user: ${userId}`)
+      } catch (error) {
+        logger.error(`[SOCKET.IO] Error marking messages as read:`, error)
       }
 
       io.to(roomId).emit('messages_read', { roomId })
@@ -177,7 +243,7 @@ export function registerChatGateway(io: Server): void {
 
   // Log active connections periodically
   setInterval(() => {
-    logger.info(`[SOCKET.IO] Active connections: ${userConnections.size}, Rooms: ${messageHistory.size}`)
+    logger.info(`[SOCKET.IO] Active connections: ${userConnections.size}`)
   }, 30000)
 }
 

@@ -85,6 +85,28 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const userId = parsedUser.id || parsedUser._id
     const userName = parsedUser.name || 'Unknown'
 
+    // Load conversations from database on startup
+    const loadConversationsFromDB = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+        const response = await fetch(`${apiUrl}/api/chat/conversations`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('[Chat] Loaded conversations from database:', data.conversations)
+          setConversations(data.conversations)
+        }
+      } catch (error) {
+        console.error('[Chat] Failed to load conversations from database:', error)
+      }
+    }
+
+    loadConversationsFromDB()
+
     // Initialize socket connection
     const socketUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
@@ -117,10 +139,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       console.log(`[Message] Received from ${message.senderName}: "${message.content}"`)
       setMessages(prev => [...prev, message])
 
-      // Only update conversation last message if it already exists (sender should already be in your conversations if you're chatting)
+      // Don't create conversation with yourself
+      if (message.senderId === userId) {
+        return
+      }
+
+      // Update or create conversation
       setConversations(prev => {
         const senderId = message.senderId
         const existingConv = prev.find(c => c.userId === senderId)
+        
         if (existingConv) {
           // Update existing conversation with latest message
           return prev.map(c =>
@@ -128,9 +156,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               ? { ...c, lastMessage: message.content, lastMessageTime: message.timestamp }
               : c
           )
+        } else {
+          // Create new conversation from received message
+          return [...prev, {
+            userId: senderId,
+            userName: message.senderName,
+            lastMessage: message.content,
+            lastMessageTime: message.timestamp,
+            unreadCount: 0
+          }]
         }
-        // Don't create new conversation from received message
-        return prev
       })
     })
 
@@ -138,6 +173,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     newSocket.on('new_message_notification', (data: { senderId: string; senderName: string; content: string }) => {
       console.log(`[Notification] Message from ${data.senderName}`)
+      
+      // Don't create conversation with yourself
+      if (data.senderId === userId) {
+        return
+      }
       
       // Add to unread notifications
       setUnreadNotifications(prev => ({
@@ -149,19 +189,33 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       }))
 
-      // Increment unread count in conversation
+      // Update or create conversation
       setConversations(prev => {
-        return prev.map(conv => {
-          if (conv.userId === data.senderId) {
-            return {
-              ...conv,
-              unreadCount: conv.unreadCount + 1,
-              lastMessage: data.content,
-              lastMessageTime: new Date().toISOString()
+        const existingConv = prev.find(c => c.userId === data.senderId)
+        
+        if (existingConv) {
+          // Update existing conversation
+          return prev.map(conv => {
+            if (conv.userId === data.senderId) {
+              return {
+                ...conv,
+                unreadCount: conv.unreadCount + 1,
+                lastMessage: data.content,
+                lastMessageTime: new Date().toISOString()
+              }
             }
-          }
-          return conv
-        })
+            return conv
+          })
+        } else {
+          // Create new conversation from notification
+          return [...prev, {
+            userId: data.senderId,
+            userName: data.senderName,
+            lastMessage: data.content,
+            lastMessageTime: new Date().toISOString(),
+            unreadCount: 1
+          }]
+        }
       })
     })
 
@@ -185,6 +239,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       newSocket.disconnect()
     }
   }, [])
+
+  // Sync conversations to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('chatConversations', JSON.stringify(conversations))
+  }, [conversations])
 
   const sendMessage = (recipientId: string, content: string) => {
     if (!socket || !isConnected) {
@@ -244,6 +303,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         return conv
       })
     })
+
+    // Mark messages as read in database
+    const token = localStorage.getItem('token')
+    if (token) {
+      fetch(`http://localhost:3000/api/chat/mark-read/${recipientId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }).catch(err => console.error('[Chat] Failed to mark messages as read:', err))
+    }
 
     socket.emit('join_chat', {
       recipientId,
