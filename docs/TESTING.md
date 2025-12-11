@@ -5,47 +5,122 @@ Instructions for running the test suite locally. Tests currently live in `backen
 ## Prerequisites
 
 - Node.js (v20+ recommended) and npm
-- A local PostgreSQL instance (do **not** point at the Neon cloud database)
-  - Provide a dedicated test database, e.g. `lostlink_test`
-  - Connection string format: `postgresql://USER:PASSWORD@HOST:PORT/DATABASE`
+- Docker and Docker Compose
+- A local PostgreSQL instance with PostGIS (do **not** point at the Neon cloud database)
 
-### Quick PostgreSQL with Docker
+## Quick Start
+
+The easiest way to run tests is using the PostgreSQL container defined in `docker-compose.yml`:
+
+### 1. Start the test database
+
+From the project root:
 
 ```bash
-docker run --name lostlink-test-db -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=lostlink_test \
-  -p 5432:5432 -d postgres:16
+docker compose up -d postgres
 ```
 
-## Running the backend tests
+This starts a PostGIS-enabled PostgreSQL container with:
 
-1. Install backend dependencies:
-   ```bash
-   cd backend
-   npm install
-   ```
-2. Set the test database URL (recommended: use `TEST_DATABASE_URL` so it stays separate from your dev database):
-   ```bash
-   export TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/lostlink_test"
-   ```
-   - The tests will refuse to run if the URL contains `neon.tech` to prevent hitting production.
-3. Run all tests:
-   ```bash
-   npm test
-   ```
+- **Host:** `localhost`
+- **Port:** `5433` (mapped from container's 5432)
+- **User:** `lostlink_test`
+- **Password:** `test_password`
+- **Database:** `lostlink_test`
 
-## Useful commands
+Wait for the container to be healthy:
 
-- Run a single test file:
-  ```bash
-  npm test -- tests/auth.integration.test.ts
-  ```
-- Drop into watch mode (Vitest UI) if desired:
-  ```bash
-  npx vitest
-  ```
+```bash
+docker compose ps
+# Should show: lostlink-postgres-1 ... (healthy)
+```
+
+### 2. Install dependencies
+
+```bash
+cd backend
+npm install
+```
+
+### 3. Configure the test database URL
+
+**Option A:** Set the environment variable inline when running tests:
+
+```bash
+TEST_DATABASE_URL="postgresql://lostlink_test:test_password@localhost:5433/lostlink_test" npm test
+```
+
+**Option B (recommended):** Add to your `backend/.env` file:
+
+```env
+TEST_DATABASE_URL=postgresql://lostlink_test:test_password@localhost:5433/lostlink_test
+```
+
+Then simply run:
+
+```bash
+npm test
+```
+
+> **Note:** The tests will refuse to run if the database URL contains `neon.tech` to prevent accidentally hitting production.
+
+### 4. Run the tests
+
+```bash
+npm test
+```
+
+Expected output:
+
+```
+ ✓ tests/auth.integration.test.ts (13 tests) 3699ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+```
+
+## Useful Commands
+
+| Command                                      | Description               |
+| -------------------------------------------- | ------------------------- |
+| `npm test`                                   | Run all tests once        |
+| `npm test -- tests/auth.integration.test.ts` | Run a specific test file  |
+| `npx vitest`                                 | Run tests in watch mode   |
+| `npx vitest --ui`                            | Open Vitest UI in browser |
+
+## Stopping the Test Database
+
+When you're done testing:
+
+```bash
+docker compose stop postgres
+```
+
+To completely remove the container and its data:
+
+```bash
+docker compose down -v postgres
+```
+
+## Troubleshooting
+
+### Tests timeout in `beforeAll`
+
+- **Cause:** The test database is not running or not reachable.
+- **Fix:** Ensure the postgres container is running with `docker compose up -d postgres` and check it's healthy with `docker compose ps`.
+
+### "Refusing to run integration tests against a Neon database"
+
+- **Cause:** `TEST_DATABASE_URL` is not set, so tests fall back to `POSTGRESQL_URI` which points to Neon.
+- **Fix:** Set `TEST_DATABASE_URL` to your local postgres instance (see step 3 above).
+
+### Connection refused on port 5433
+
+- **Cause:** The postgres container is not running.
+- **Fix:** Run `docker compose up -d postgres` and wait for it to be healthy.
 
 ## Notes
 
-- Tests clean up the `users` table before each test but otherwise leave the database intact. Use a throwaway database for safety.
+- Tests clean up the `users` table before each test but otherwise leave the database intact.
 - The JWT secret defaults to a test value in the suite; you do not need to set `JWT_SECRET` for local runs.
+- The test database uses PostGIS for geographic features. The `docker-compose.yml` uses the `postgis/postgis:17-3.4` image.

@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "test": "vitest run --runInBand"
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
