@@ -1,16 +1,13 @@
+import { config as loadEnv } from "dotenv";
+
+loadEnv();
+
 import type { Express } from "express";
 import request from "supertest";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { users } from "../src/db/schema";
 
@@ -47,6 +44,39 @@ describe.sequential("Auth integration", () => {
     const drizzle = await import("../src/config/drizzle");
     db = drizzle.db;
     pool = drizzle.pool;
+
+    // Create extensions
+    await pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+    await pool.query('CREATE EXTENSION IF NOT EXISTS "postgis"');
+
+    // Create schema using SQL file directly
+    // (drizzle-kit push can hang on interactive prompts with PostGIS databases)
+    const { resolve } = await import("path");
+    const fs = await import("fs");
+    const schemaPath = resolve(
+      __dirname,
+      "../src/neonMigrationSchema/schema.sql"
+    );
+    const schemaSql = fs.readFileSync(schemaPath, "utf-8");
+
+    // Remove comments and execute statements
+    const statements = schemaSql
+      .split(";")
+      .map((s) => s.replace(/^--.*$/gm, "").trim())
+      .filter((s) => s.length > 0 && !s.startsWith("--"));
+
+    for (const statement of statements) {
+      if (statement.trim()) {
+        try {
+          await pool.query(statement);
+        } catch (err) {
+          // Ignore errors for already existing objects
+          if (!String(err).includes("already exists")) {
+            console.warn("SQL execution warning:", err);
+          }
+        }
+      }
+    }
 
     ({ app } = await import("../src/app"));
   });
