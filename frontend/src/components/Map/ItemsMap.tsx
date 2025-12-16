@@ -220,8 +220,6 @@ export function ItemsMap({
         zoom: 16,
       });
 
-      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-
       // Close popups when clicking on the map (but not on markers/popups)
       map.current.on("click", (e) => {
         // Check if the click target is a marker or popup element

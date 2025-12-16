@@ -46,8 +46,6 @@ export function MapPicker({
       zoom: 16,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-
     // Wait for map to load before setting up marker and handlers
     map.current.on("load", () => {
       if (!map.current || !mapContainer.current) return;
