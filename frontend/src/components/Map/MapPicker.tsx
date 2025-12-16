@@ -1,0 +1,161 @@
+import { useEffect, useRef, useState } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { MAPBOX_TOKEN, CENTER } from "../../config/mapbox";
+import "./MapPicker.css";
+
+interface MapPickerProps {
+  initialLat?: number;
+  initialLng?: number;
+  onLocationSelect: (lat: number, lng: number) => void;
+}
+
+export function MapPicker({
+  initialLat,
+  initialLng,
+  onLocationSelect,
+}: MapPickerProps) {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const marker = useRef<mapboxgl.Marker | null>(null);
+  const onLocationSelectRef = useRef(onLocationSelect);
+  const isInitialized = useRef(false);
+
+  // State for displaying coordinates
+  const [coordinates, setCoordinates] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(
+    initialLat && initialLng ? { lat: initialLat, lng: initialLng } : null
+  );
+
+  // Keep callback ref up to date
+  useEffect(() => {
+    onLocationSelectRef.current = onLocationSelect;
+  }, [onLocationSelect]);
+
+  // Initialize map only once
+  useEffect(() => {
+    if (!MAPBOX_TOKEN) {
+      console.error("Mapbox access token missing");
+      return;
+    }
+    if (!mapContainer.current) return;
+    if (isInitialized.current) return; // Prevent re-initialization
+
+    isInitialized.current = true;
+
+    // Initialize map
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      accessToken: MAPBOX_TOKEN,
+      style: "mapbox://styles/mapbox/streets-v12",
+      center: [initialLng || CENTER.lng, initialLat || CENTER.lat],
+      zoom: 16,
+    });
+
+    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+    // Wait for map to load before setting up marker and handlers
+    map.current.on("load", () => {
+      if (!map.current || !mapContainer.current) return;
+
+      // Create draggable marker
+      const markerElement = document.createElement("div");
+      markerElement.className = "map-picker-marker";
+      markerElement.innerHTML = `
+        <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 0C7.163 0 0 7.163 0 16c0 13 16 26 16 26s16-13 16-26c0-8.837-7.163-16-16-16z" fill="#3b82f6"/>
+          <circle cx="16" cy="16" r="6" fill="white"/>
+        </svg>
+      `;
+
+      marker.current = new mapboxgl.Marker({
+        element: markerElement,
+        draggable: true,
+      })
+        .setLngLat([initialLng || CENTER.lng, initialLat || CENTER.lat])
+        .addTo(map.current);
+
+      // Set initial coordinates
+      const initialCoords = {
+        lat: initialLat || CENTER.lat,
+        lng: initialLng || CENTER.lng,
+      };
+      setCoordinates(initialCoords);
+
+      // Handle marker drag
+      marker.current.on("dragend", () => {
+        if (marker.current) {
+          const lngLat = marker.current.getLngLat();
+          const newCoords = { lat: lngLat.lat, lng: lngLat.lng };
+          setCoordinates(newCoords);
+          onLocationSelectRef.current(lngLat.lat, lngLat.lng);
+        }
+      });
+
+      // Handle map click to move marker
+      map.current.on("click", (e) => {
+        if (marker.current) {
+          const newLngLat = [e.lngLat.lng, e.lngLat.lat] as [number, number];
+          marker.current.setLngLat(newLngLat);
+          const newCoords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+          setCoordinates(newCoords);
+          onLocationSelectRef.current(e.lngLat.lat, e.lngLat.lng);
+        }
+      });
+    });
+
+    // Cleanup
+    return () => {
+      if (marker.current) {
+        marker.current.remove();
+        marker.current = null;
+      }
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+      isInitialized.current = false;
+    };
+  }, []); // Empty dependency array - only run once on mount
+
+  // Update marker position if initial coordinates change
+  useEffect(() => {
+    if (
+      marker.current &&
+      (initialLat !== undefined || initialLng !== undefined)
+    ) {
+      const newLng = initialLng ?? CENTER.lng;
+      const newLat = initialLat ?? CENTER.lat;
+      marker.current.setLngLat([newLng, newLat]);
+      setCoordinates({ lat: newLat, lng: newLng });
+    }
+  }, [initialLat, initialLng]);
+
+  return (
+    <div className="map-picker-container">
+      <div ref={mapContainer} className="map-picker-map" />
+
+      {coordinates && (
+        <div className="map-picker-coordinates">
+          <div className="map-picker-coordinates-title">Selected Location:</div>
+          <div className="map-picker-coordinates-values">
+            <span className="map-picker-coordinate-label">Lat:</span>
+            <span className="map-picker-coordinate-value">
+              {coordinates.lat.toFixed(6)}
+            </span>
+            <span className="map-picker-coordinate-label">Lng:</span>
+            <span className="map-picker-coordinate-value">
+              {coordinates.lng.toFixed(6)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="map-picker-instructions">
+        Click on the map or drag the marker to select a location
+      </div>
+    </div>
+  );
+}
