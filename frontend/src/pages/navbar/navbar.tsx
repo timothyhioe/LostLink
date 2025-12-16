@@ -1,121 +1,139 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import './navbar.css'
-import ItemPostForm from './itemPostForm/itemPostForm'
-import NavbarChat from '../../components/NavbarChat/NavbarChat'
-import { useChat } from '../../contexts/ChatContext'
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "./navbar.css";
+import ItemPostForm from "./itemPostForm/itemPostForm";
+import NavbarChat from "../../components/NavbarChat/NavbarChat";
+import { useChat } from "../../contexts/ChatContext";
 
 /* eslint-disable react-hooks/set-state-in-effect */
-import messageIcon from '../../assets/Navbar/message_.png'
-import messageIconWhite from '../../assets/Navbar/message-white.png'
-import notificationIcon from '../../assets/Navbar/notification_.png'
-import notificationIconWhite from '../../assets/Navbar/notification-white.png'
-import profileIcon from '../../assets/Navbar/profile-circle_.png'
-import profileIconWhite from '../../assets/Navbar/profile-circle-white.png'
-import darkModeIcon from '../../assets/Navbar/dark-mode_.png'
-import lightModeIconWhite from '../../assets/Navbar/light-mode-white.png'
+import messageIcon from "../../assets/Navbar/message_.png";
+import messageIconWhite from "../../assets/Navbar/message-white.png";
+import notificationIcon from "../../assets/Navbar/notification_.png";
+import notificationIconWhite from "../../assets/Navbar/notification-white.png";
+import profileIcon from "../../assets/Navbar/profile-circle_.png";
+import profileIconWhite from "../../assets/Navbar/profile-circle-white.png";
+import darkModeIcon from "../../assets/Navbar/dark-mode_.png";
+import lightModeIconWhite from "../../assets/Navbar/light-mode-white.png";
 
 interface NavbarProps {
-  onLogout: () => void
-  onLogoClick?: () => void
-  isDarkMode: boolean
-  onThemeToggle: (isDark: boolean) => void
-  onItemPosted?: () => void
+  onLogout: () => void;
+  onLogoClick?: () => void;
+  isDarkMode: boolean;
+  onThemeToggle: (isDark: boolean) => void;
+  onItemPosted?: () => void;
 }
 
-export default function Navbar({ onLogout, onLogoClick, isDarkMode, onThemeToggle, onItemPosted }: NavbarProps) {
-  const { selectedConversationId, unreadNotifications, chatOpenTrigger } = useChat()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isPostFormOpen, setIsPostFormOpen] = useState(false)
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
-  const [isChatOpen, setIsChatOpen] = useState(false)
-  const navigate = useNavigate()
+export default function Navbar({
+  onLogout,
+  onLogoClick,
+  isDarkMode,
+  onThemeToggle,
+  onItemPosted,
+}: NavbarProps) {
+  const { selectedConversationId, unreadNotifications, chatOpenTrigger } =
+    useChat();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPostFormOpen, setIsPostFormOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Calculate total unread notifications
-  const unreadCount = Object.keys(unreadNotifications).length
+  const unreadCount = Object.keys(unreadNotifications).length;
 
   // Auto-open chat when a conversation is selected or when trigger changes
-   
+
   useEffect(() => {
     if (selectedConversationId || chatOpenTrigger > 0) {
-      setIsChatOpen(true)
+      setIsChatOpen(true);
     }
-  }, [selectedConversationId, chatOpenTrigger])
+  }, [selectedConversationId, chatOpenTrigger]);
 
   // Handle body scroll when menu is open
   useEffect(() => {
     if (isMenuOpen) {
-      document.body.style.overflow = 'hidden'
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'auto'
+      document.body.style.overflow = "auto";
     }
 
     return () => {
-      document.body.style.overflow = 'auto'
-    }
-  }, [isMenuOpen])
+      document.body.style.overflow = "auto";
+    };
+  }, [isMenuOpen]);
 
   const handleMenuToggle = () => {
-    setIsMenuOpen(prevState => !prevState)
-  }
+    setIsMenuOpen((prevState) => !prevState);
+  };
 
   const handleCloseMenu = () => {
-    setIsMenuOpen(false)
-  }
+    setIsMenuOpen(false);
+  };
 
   const handleMessageClickWrapper = () => {
-    setIsChatOpen(prev => !prev)
-    handleCloseMenu()
-  }
+    setIsChatOpen((prev) => !prev);
+    handleCloseMenu();
+  };
 
   const handleLogoutWrapper = () => {
-    handleCloseMenu()
-    onLogout()
-  }
+    handleCloseMenu();
+    onLogout();
+  };
 
   const handlePostClick = () => {
-    setIsPostFormOpen(true)
-    handleCloseMenu()
-  }
+    setIsPostFormOpen(true);
+    handleCloseMenu();
+  };
 
   const handlePostFormClose = () => {
-    setIsPostFormOpen(false)
-  }
+    setIsPostFormOpen(false);
+  };
 
   const handlePostSuccess = () => {
     if (onItemPosted) {
-      onItemPosted()
+      onItemPosted();
     }
-  }
+  };
 
   const handleLogoClick = () => {
-    handleCloseMenu()
+    handleCloseMenu();
     if (onLogoClick) {
-      onLogoClick()
+      onLogoClick();
     }
-  }
+  };
 
   const handleProfileClick = () => {
-    setIsProfileDropdownOpen(!isProfileDropdownOpen)
-  }
+    setIsProfileDropdownOpen(!isProfileDropdownOpen);
+  };
 
   const handleMyPostsClick = () => {
-    navigate('/my-posts')
-    setIsProfileDropdownOpen(false)
-    handleCloseMenu()
-  }
+    navigate("/my-posts");
+    setIsProfileDropdownOpen(false);
+    handleCloseMenu();
+  };
+
+  const handleMapClick = () => {
+    navigate("/map");
+    handleCloseMenu();
+  };
 
   return (
     <>
       {/* Navbar */}
-      <nav className={`navbar ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
+      <nav className={`navbar ${isDarkMode ? "dark-mode" : "light-mode"}`}>
         <div className="navbar-container">
           <div className="navbar-left">
-            <h1 className="navbar-logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>LostLink</h1>
+            <h1
+              className="navbar-logo"
+              onClick={handleLogoClick}
+              style={{ cursor: "pointer" }}
+            >
+              LostLink
+            </h1>
             <div className="navbar-search-container">
-              <input 
-                type="text" 
-                placeholder="Suche..." 
+              <input
+                type="text"
+                placeholder="Suche..."
                 className="navbar-search-input"
               />
               <button className="navbar-search-btn">Search</button>
@@ -123,47 +141,60 @@ export default function Navbar({ onLogout, onLogoClick, isDarkMode, onThemeToggl
           </div>
 
           <div className="navbar-right">
-            <button 
-              className="navbar-post-button"
-              onClick={handlePostClick}
-            >
+            <button className="navbar-post-button" onClick={handlePostClick}>
               Post
             </button>
 
-            <button 
+            <button
               className="navbar-theme-toggle"
               onClick={() => onThemeToggle(!isDarkMode)}
-              title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+              title={isDarkMode ? "Light Mode" : "Dark Mode"}
             >
-              <img src={isDarkMode ? lightModeIconWhite : darkModeIcon} alt={isDarkMode ? 'Light Mode' : 'Dark Mode'} />
+              <img
+                src={isDarkMode ? lightModeIconWhite : darkModeIcon}
+                alt={isDarkMode ? "Light Mode" : "Dark Mode"}
+              />
             </button>
-            
-            <button 
+
+            <button
               className="navbar-message-btn"
               onClick={handleMessageClickWrapper}
               title="Messages"
             >
-              <img src={isDarkMode ? messageIconWhite : messageIcon} alt="Messages" />
+              <img
+                src={isDarkMode ? messageIconWhite : messageIcon}
+                alt="Messages"
+              />
               {unreadCount > 0 && (
                 <span className="navbar-message-badge">{unreadCount}</span>
               )}
             </button>
-            
+
             <button className="navbar-notification-btn" title="Notifications">
-              <img src={isDarkMode ? notificationIconWhite : notificationIcon} alt="Notifications" />
+              <img
+                src={isDarkMode ? notificationIconWhite : notificationIcon}
+                alt="Notifications"
+              />
             </button>
-            
+
             <div className="navbar-profile-container">
-              <button 
-                className="navbar-profile-btn" 
+              <button
+                className="navbar-profile-btn"
                 title="Profile"
                 onClick={handleProfileClick}
               >
-                <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" />
+                <img
+                  src={isDarkMode ? profileIconWhite : profileIcon}
+                  alt="Profile"
+                />
               </button>
               {isProfileDropdownOpen && (
-                <div className={`navbar-profile-dropdown ${isDarkMode ? 'dark-mode' : ''}`}>
-                  <button 
+                <div
+                  className={`navbar-profile-dropdown ${
+                    isDarkMode ? "dark-mode" : ""
+                  }`}
+                >
+                  <button
                     className="dropdown-item"
                     onClick={handleMyPostsClick}
                   >
@@ -173,16 +204,13 @@ export default function Navbar({ onLogout, onLogoClick, isDarkMode, onThemeToggl
               )}
             </div>
 
-            <button 
-              className="navbar-logout-button"
-              onClick={onLogout}
-            >
+            <button className="navbar-logout-button" onClick={onLogout}>
               Log Out
             </button>
           </div>
 
           {/* Mobile menu button */}
-          <button 
+          <button
             className="navbar-menu-toggle"
             onClick={handleMenuToggle}
             title="Menu"
@@ -193,43 +221,71 @@ export default function Navbar({ onLogout, onLogoClick, isDarkMode, onThemeToggl
       </nav>
 
       {/* Mobile dropdown menu */}
-      <div className={`navbar-mobile-container ${isMenuOpen ? 'visible' : ''} ${isDarkMode ? 'dark-mode' : ''}`}>
+      <div
+        className={`navbar-mobile-container ${isMenuOpen ? "visible" : ""} ${
+          isDarkMode ? "dark-mode" : ""
+        }`}
+      >
         <div className="navbar-mobile-content">
           {/* Close button */}
-          
 
-          <button 
+          <button
             className="navbar-post-button navbar-mobile-item"
             onClick={handlePostClick}
           >
             Post
           </button>
-          <button 
+          <button
+            className="navbar-mobile-item"
+            onClick={handleMapClick}
+            title="Map"
+          >
+            Map
+          </button>
+          <button
             className="navbar-theme-toggle navbar-mobile-item"
             onClick={() => onThemeToggle(!isDarkMode)}
-            title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+            title={isDarkMode ? "Light Mode" : "Dark Mode"}
           >
-            <img src={isDarkMode ? lightModeIconWhite : darkModeIcon} alt={isDarkMode ? 'Light Mode' : 'Dark Mode'} />
-            {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+            <img
+              src={isDarkMode ? lightModeIconWhite : darkModeIcon}
+              alt={isDarkMode ? "Light Mode" : "Dark Mode"}
+            />
+            {isDarkMode ? "Light Mode" : "Dark Mode"}
           </button>
-          <button 
+          <button
             className="navbar-message-btn navbar-mobile-item"
             onClick={handleMessageClickWrapper}
             title="Messages"
           >
-            <img src={isDarkMode ? messageIconWhite : messageIcon} alt="Messages" /> Messages
+            <img
+              src={isDarkMode ? messageIconWhite : messageIcon}
+              alt="Messages"
+            />{" "}
+            Messages
           </button>
-          <button className="navbar-notification-btn navbar-mobile-item" title="Notifications">
-            <img src={isDarkMode ? notificationIconWhite : notificationIcon} alt="Notifications" /> Notifications
+          <button
+            className="navbar-notification-btn navbar-mobile-item"
+            title="Notifications"
+          >
+            <img
+              src={isDarkMode ? notificationIconWhite : notificationIcon}
+              alt="Notifications"
+            />{" "}
+            Notifications
           </button>
-          <button 
-            className="navbar-profile-btn navbar-mobile-item" 
+          <button
+            className="navbar-profile-btn navbar-mobile-item"
             title="Profile"
             onClick={handleMyPostsClick}
           >
-            <img src={isDarkMode ? profileIconWhite : profileIcon} alt="Profile" /> My Posts
+            <img
+              src={isDarkMode ? profileIconWhite : profileIcon}
+              alt="Profile"
+            />{" "}
+            My Posts
           </button>
-          <button 
+          <button
             className="navbar-logout-button navbar-mobile-item"
             onClick={handleLogoutWrapper}
           >
@@ -238,18 +294,18 @@ export default function Navbar({ onLogout, onLogoClick, isDarkMode, onThemeToggl
         </div>
       </div>
 
-      <ItemPostForm 
-        isOpen={isPostFormOpen} 
-        onClose={handlePostFormClose} 
+      <ItemPostForm
+        isOpen={isPostFormOpen}
+        onClose={handlePostFormClose}
         isDarkMode={isDarkMode}
         onPostSuccess={handlePostSuccess}
       />
 
-      <NavbarChat 
-        isOpen={isChatOpen} 
+      <NavbarChat
+        isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         isDarkMode={isDarkMode}
       />
     </>
-  )
+  );
 }

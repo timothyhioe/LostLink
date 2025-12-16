@@ -9,3 +9,9 @@
   width: 100vw;
   height: 100vh;
 }
+
+/* Hide Mapbox attribution and info button */
+.map-container .mapboxgl-ctrl-attrib,
+.map-container .mapboxgl-ctrl-logo {
+  display: none !important;
+}

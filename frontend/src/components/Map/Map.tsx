@@ -38,6 +38,7 @@ export function Map({ className, style, onMapLoad }: MapProps) {
       style: "mapbox://styles/mapbox/streets-v12",
       center: [CENTER.lng, CENTER.lat],
       zoom: 9, // TODO: figure out
+      attributionControl: false, // Disable attribution control
     });
 
     // Add navigation controls (zoom, rotation)
