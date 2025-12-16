@@ -82,12 +82,12 @@
 
 /* Lost items - Red marker */
 .items-map-marker-lost .items-map-marker-pin {
-  filter: drop-shadow(0 2px 4px rgba(239, 68, 68, 0.4));
+  filter: drop-shadow(0 2px 4px rgba(97, 0, 0, 0.4));
 }
 
 /* Found items - Blue marker */
 .items-map-marker-found .items-map-marker-pin {
-  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.4));
+  filter: drop-shadow(0 2px 4px rgba(1, 46, 118, 0.4));
 }
 
 /* Popup styling */
@@ -98,6 +98,14 @@
   max-width: 300px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background-color: white;
+}
+
+/* Dark mode popup background */
+.items-map-popup.dark-mode,
+.items-map-popup.dark-mode .items-map-popup-content {
+  background-color: #1f2937;
 }
 
 .items-map-popup {
@@ -179,6 +187,25 @@
   gap: 4px;
 }
 
+/* Dark mode popup text colors */
+.items-map-popup.dark-mode .items-map-popup-title {
+  color: #f3f4f6;
+}
+
+.items-map-popup.dark-mode .items-map-popup-description {
+  color: #d1d5db;
+}
+
+.items-map-popup.dark-mode .items-map-popup-location,
+.items-map-popup.dark-mode .items-map-popup-date,
+.items-map-popup.dark-mode .items-map-popup-user {
+  color: #9ca3af;
+}
+
+.items-map-popup.dark-mode .items-map-popup-status {
+  color: #9ca3af;
+}
+
 .items-map-popup-link {
   display: inline-block;
   margin-top: 12px;
@@ -196,11 +223,11 @@
 }
 
 .items-map-popup-link:hover {
-  background-color: #2563eb;
+  background-color: #1d4ed8;
 }
 
 .items-map-popup-link:active {
-  background-color: #1d4ed8;
+  background-color: #183682;
 }
 
 /* Popup close button */
@@ -219,36 +246,60 @@
   color: #1f2937;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .items-map-loading,
-  .items-map-empty {
-    background: #1f2937;
-    color: #f3f4f6;
-  }
+/* Dark mode popup text colors */
+.items-map-popup.dark-mode .items-map-popup-title {
+  color: #f3f4f6;
+}
 
-  .items-map-popup-title {
-    color: #f3f4f6;
-  }
+.items-map-popup.dark-mode .items-map-popup-description {
+  color: #d1d5db;
+}
 
-  .items-map-popup-description {
-    color: #d1d5db;
-  }
+.items-map-popup.dark-mode .items-map-popup-location,
+.items-map-popup.dark-mode .items-map-popup-date,
+.items-map-popup.dark-mode .items-map-popup-user {
+  color: #9ca3af;
+}
 
-  .items-map-popup-location,
-  .items-map-popup-date,
-  .items-map-popup-user {
-    color: #9ca3af;
-  }
+.items-map-popup.dark-mode .items-map-popup-status {
+  color: #9ca3af;
+}
 
-  .mapboxgl-popup-close-button {
-    color: #9ca3af;
-  }
+.items-map-popup.dark-mode .mapboxgl-popup-close-button {
+  color: #9ca3af;
+}
 
-  .mapboxgl-popup-close-button:hover {
-    background-color: #374151;
-    color: #f3f4f6;
-  }
+.items-map-popup.dark-mode .mapboxgl-popup-close-button:hover {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+/* Dark mode popup text colors */
+.items-map-popup.dark-mode .items-map-popup-title {
+  color: #f3f4f6;
+}
+
+.items-map-popup.dark-mode .items-map-popup-description {
+  color: #d1d5db;
+}
+
+.items-map-popup.dark-mode .items-map-popup-location,
+.items-map-popup.dark-mode .items-map-popup-date,
+.items-map-popup.dark-mode .items-map-popup-user {
+  color: #9ca3af;
+}
+
+.items-map-popup.dark-mode .items-map-popup-status {
+  color: #9ca3af;
+}
+
+.items-map-popup.dark-mode .mapboxgl-popup-close-button {
+  color: #9ca3af;
+}
+
+.items-map-popup.dark-mode .mapboxgl-popup-close-button:hover {
+  background-color: #374151;
+  color: #f3f4f6;
 }
 
 /* Responsive adjustments */
@@ -279,4 +330,3 @@
 .items-map-container .mapboxgl-ctrl-logo {
   display: none !important;
 }
-

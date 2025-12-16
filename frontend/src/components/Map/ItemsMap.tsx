@@ -43,6 +43,7 @@ interface ItemsMapProps {
   items?: MapItem[]; // Optional: pass items directly instead of fetching
   typeFilter?: "all" | "lost" | "found"; // Optional: filter by type
   statusFilter?: "all" | "open" | "matched" | "resolved" | "closed"; // Optional: filter by status
+  isDarkMode?: boolean; // Optional: enable dark mode map style
 }
 
 export function ItemsMap({
@@ -52,6 +53,7 @@ export function ItemsMap({
   items: providedItems,
   typeFilter,
   statusFilter,
+  isDarkMode = false,
 }: ItemsMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -156,7 +158,7 @@ export function ItemsMap({
     });
 
     return `
-      <div class="items-map-popup">
+      <div class="items-map-popup ${isDarkMode ? "dark-mode" : ""}">
         ${
           imageUrl
             ? `<img src="${imageUrl}" alt="${item.title}" class="items-map-popup-image" />`
@@ -215,7 +217,9 @@ export function ItemsMap({
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         accessToken: MAPBOX_TOKEN,
-        style: "mapbox://styles/mapbox/streets-v12",
+        style: isDarkMode
+          ? "mapbox://styles/mapbox/dark-v11"
+          : "mapbox://styles/mapbox/streets-v12",
         center: [CENTER.lng, CENTER.lat],
         zoom: 16,
         attributionControl: false, // Disable attribution control
@@ -275,6 +279,16 @@ export function ItemsMap({
       isInitialized.current = false;
     };
   }, []);
+
+  // Update map style when dark mode changes
+  useEffect(() => {
+    if (map.current && map.current.loaded()) {
+      const newStyle = isDarkMode
+        ? "mapbox://styles/mapbox/dark-v11"
+        : "mapbox://styles/mapbox/streets-v12";
+      map.current.setStyle(newStyle);
+    }
+  }, [isDarkMode]);
 
   const updateMarkers = useCallback(() => {
     if (!map.current) return;
@@ -346,7 +360,7 @@ export function ItemsMap({
       // Create popup
       const popup = new mapboxgl.Popup({
         offset: 25,
-        closeButton: true,
+        closeButton: false,
         closeOnClick: false,
       }).setHTML(createPopupContent(item));
 

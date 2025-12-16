@@ -38,7 +38,11 @@ interface MapItem {
 
 export default function MapView() {
   const [filteredItems, setFilteredItems] = useState<MapItem[]>([]);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Initialize from localStorage
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme === "dark";
+  });
 
   // Filter states
   const [typeFilter, setTypeFilter] = useState<"lost" | "found">("found");
@@ -115,6 +119,7 @@ export default function MapView() {
             apiBaseUrl={API_BASE_URL}
             className="map-view-items-map"
             items={filteredItems}
+            isDarkMode={isDarkMode}
           />
 
           {/* Floating toggle overlay */}
