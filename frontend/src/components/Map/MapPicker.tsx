@@ -8,12 +8,14 @@ interface MapPickerProps {
   initialLat?: number;
   initialLng?: number;
   onLocationSelect: (lat: number, lng: number) => void;
+  isDarkMode?: boolean;
 }
 
 export function MapPicker({
   initialLat,
   initialLng,
   onLocationSelect,
+  isDarkMode = false,
 }: MapPickerProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -41,7 +43,9 @@ export function MapPicker({
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       accessToken: MAPBOX_TOKEN,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: isDarkMode
+        ? "mapbox://styles/mapbox/dark-v11"
+        : "mapbox://styles/mapbox/streets-v12",
       center: [initialLng || CENTER.lng, initialLat || CENTER.lat],
       zoom: 16,
       attributionControl: false, // Disable attribution control
@@ -99,6 +103,16 @@ export function MapPicker({
       isInitialized.current = false;
     };
   }, []); // Empty dependency array - only run once on mount
+
+  // Update map style when dark mode changes
+  useEffect(() => {
+    if (map.current && map.current.loaded()) {
+      const newStyle = isDarkMode
+        ? "mapbox://styles/mapbox/dark-v11"
+        : "mapbox://styles/mapbox/streets-v12";
+      map.current.setStyle(newStyle);
+    }
+  }, [isDarkMode]);
 
   // Update marker position if initial coordinates change
   useEffect(() => {
