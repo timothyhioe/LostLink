@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { MAPBOX_TOKEN, CENTER } from "../../config/mapbox";
@@ -20,14 +20,6 @@ export function MapPicker({
   const marker = useRef<mapboxgl.Marker | null>(null);
   const onLocationSelectRef = useRef(onLocationSelect);
   const isInitialized = useRef(false);
-
-  // State for displaying coordinates
-  const [coordinates, setCoordinates] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(
-    initialLat && initialLng ? { lat: initialLat, lng: initialLng } : null
-  );
 
   // Keep callback ref up to date
   useEffect(() => {
@@ -77,19 +69,10 @@ export function MapPicker({
         .setLngLat([initialLng || CENTER.lng, initialLat || CENTER.lat])
         .addTo(map.current);
 
-      // Set initial coordinates
-      const initialCoords = {
-        lat: initialLat || CENTER.lat,
-        lng: initialLng || CENTER.lng,
-      };
-      setCoordinates(initialCoords);
-
       // Handle marker drag
       marker.current.on("dragend", () => {
         if (marker.current) {
           const lngLat = marker.current.getLngLat();
-          const newCoords = { lat: lngLat.lat, lng: lngLat.lng };
-          setCoordinates(newCoords);
           onLocationSelectRef.current(lngLat.lat, lngLat.lng);
         }
       });
@@ -99,8 +82,6 @@ export function MapPicker({
         if (marker.current) {
           const newLngLat = [e.lngLat.lng, e.lngLat.lat] as [number, number];
           marker.current.setLngLat(newLngLat);
-          const newCoords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
-          setCoordinates(newCoords);
           onLocationSelectRef.current(e.lngLat.lat, e.lngLat.lng);
         }
       });
@@ -129,29 +110,12 @@ export function MapPicker({
       const newLng = initialLng ?? CENTER.lng;
       const newLat = initialLat ?? CENTER.lat;
       marker.current.setLngLat([newLng, newLat]);
-      setCoordinates({ lat: newLat, lng: newLng });
     }
   }, [initialLat, initialLng]);
 
   return (
     <div className="map-picker-container">
       <div ref={mapContainer} className="map-picker-map" />
-
-      {coordinates && (
-        <div className="map-picker-coordinates">
-          <div className="map-picker-coordinates-title">Selected Location:</div>
-          <div className="map-picker-coordinates-values">
-            <span className="map-picker-coordinate-label">Lat:</span>
-            <span className="map-picker-coordinate-value">
-              {coordinates.lat.toFixed(6)}
-            </span>
-            <span className="map-picker-coordinate-label">Lng:</span>
-            <span className="map-picker-coordinate-value">
-              {coordinates.lng.toFixed(6)}
-            </span>
-          </div>
-        </div>
-      )}
 
       <div className="map-picker-instructions">
         Click on the map or drag the marker to select a location
