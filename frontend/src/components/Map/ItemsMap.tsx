@@ -222,6 +222,27 @@ export function ItemsMap({
 
       map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
+      // Close popups when clicking on the map (but not on markers/popups)
+      map.current.on("click", (e) => {
+        // Check if the click target is a marker or popup element
+        const target = e.originalEvent.target as HTMLElement;
+        const isMarker = target.closest(".items-map-marker");
+        const isPopup = target.closest(".mapboxgl-popup");
+        const isPopupCloseButton = target.closest(
+          ".mapboxgl-popup-close-button"
+        );
+
+        // If clicking on map (not marker, popup, or popup close button), close all popups
+        if (!isMarker && !isPopup && !isPopupCloseButton) {
+          markers.current.forEach((marker) => {
+            const popup = marker.getPopup();
+            if (popup && popup.isOpen()) {
+              popup.remove();
+            }
+          });
+        }
+      });
+
       // Wait for map to load
       map.current.on("load", () => {
         console.log("ItemsMap: Map loaded successfully");
