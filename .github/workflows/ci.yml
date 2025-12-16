@@ -33,7 +33,22 @@ jobs:
         working-directory: ./backend
         run: npm run lint
 
-      #- name: Run tests #not yet implemented
+      - name: Start PostgreSQL
+        run: |
+          docker compose up -d postgres
+          echo "Waiting for PostgreSQL to be ready..."
+          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U lostlink_test > /dev/null 2>&1; do sleep 2; done'
+          echo "PostgreSQL is ready!"
+
+      - name: Run tests
+        working-directory: ./backend
+        env:
+          TEST_DATABASE_URL: postgresql://lostlink_test:test_password@localhost:5433/lostlink_test
+        run: npm test
+
+      - name: Stop PostgreSQL
+        if: always()
+        run: docker compose down postgres
 
   frontend:
     runs-on: ubuntu-latest
