@@ -109,24 +109,6 @@ export default function MapView() {
       />
 
       <div className="map-view-container">
-        {/* Filters */}
-        <div className="map-view-filters">
-          <div className="map-view-filter-group">
-            <label htmlFor="type-filter">Type:</label>
-            <select
-              id="type-filter"
-              value={typeFilter}
-              onChange={(e) =>
-                setTypeFilter(e.target.value as "lost" | "found")
-              }
-              className="map-view-filter-select"
-            >
-              <option value="found">Found</option>
-              <option value="lost">Lost</option>
-            </select>
-          </div>
-        </div>
-
         {/* Map */}
         <div className="map-view-map-container">
           <ItemsMap
@@ -134,6 +116,33 @@ export default function MapView() {
             className="map-view-items-map"
             items={filteredItems}
           />
+
+          {/* Floating toggle overlay */}
+          <div className="map-view-toggle-overlay">
+            <div className="map-view-toggle-container">
+              <div
+                className={`map-view-toggle-slider ${
+                  typeFilter === "lost" ? "right" : "left"
+                }`}
+              />
+              <button
+                className={`map-view-toggle-option ${
+                  typeFilter === "found" ? "active" : ""
+                }`}
+                onClick={() => setTypeFilter("found")}
+              >
+                Found
+              </button>
+              <button
+                className={`map-view-toggle-option ${
+                  typeFilter === "lost" ? "active" : ""
+                }`}
+                onClick={() => setTypeFilter("lost")}
+              >
+                Lost
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
