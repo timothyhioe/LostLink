@@ -356,14 +356,13 @@ export default function ItemPostForm({
             <div className="item-post-form-group">
               <label>Pick Location on Map</label>
               <div className="item-post-form-map-picker-wrapper">
-                <MapPicker onLocationSelect={handleLocationSelect} />
+                <MapPicker
+                  onLocationSelect={handleLocationSelect}
+                  initialLat={selectedCoordinates?.lat}
+                  initialLng={selectedCoordinates?.lng}
+                  isDarkMode={isDarkMode}
+                />
               </div>
-              {selectedCoordinates && (
-                <p className="item-post-form-coordinates-display">
-                  Selected: Lat {selectedCoordinates.lat.toFixed(6)}, Lng{" "}
-                  {selectedCoordinates.lng.toFixed(6)}
-                </p>
-              )}
               <button
                 type="button"
                 className="item-post-form-use-building-button"
