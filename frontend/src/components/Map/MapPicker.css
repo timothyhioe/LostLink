@@ -128,3 +128,9 @@
     padding: 6px 12px;
   }
 }
+
+/* Hide Mapbox attribution and info button */
+.map-picker-container .mapboxgl-ctrl-attrib,
+.map-picker-container .mapboxgl-ctrl-logo {
+  display: none !important;
+}

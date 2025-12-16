@@ -218,6 +218,7 @@ export function ItemsMap({
         style: "mapbox://styles/mapbox/streets-v12",
         center: [CENTER.lng, CENTER.lat],
         zoom: 16,
+        attributionControl: false, // Disable attribution control
       });
 
       // Close popups when clicking on the map (but not on markers/popups)

@@ -44,6 +44,7 @@ export function MapPicker({
       style: "mapbox://styles/mapbox/streets-v12",
       center: [initialLng || CENTER.lng, initialLat || CENTER.lat],
       zoom: 16,
+      attributionControl: false, // Disable attribution control
     });
 
     // Wait for map to load before setting up marker and handlers

@@ -274,3 +274,9 @@
   }
 }
 
+/* Hide Mapbox attribution and info button */
+.items-map-container .mapboxgl-ctrl-attrib,
+.items-map-container .mapboxgl-ctrl-logo {
+  display: none !important;
+}
+
