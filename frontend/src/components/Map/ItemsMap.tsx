@@ -104,7 +104,11 @@ export function ItemsMap({
         console.log("ItemsMap: Fetched items from API", data);
         // Transform items to handle nested coordinates structure
         const transformedItems: MapItem[] = (data.items || []).map(
-          (item: any) => ({
+          (
+            item: MapItem & {
+              coordinates?: { longitude?: number; latitude?: number };
+            }
+          ) => ({
             ...item,
             // Extract coordinates from nested object if present
             longitude: item.coordinates?.longitude ?? item.longitude,
@@ -146,18 +150,22 @@ export function ItemsMap({
   };
 
   // Create popup content
-  const createPopupContent = (item: MapItem) => {
-    const imageUrl =
-      item.images && item.images.length > 0
-        ? `http://localhost:5000${item.images[0].url}`
-        : null;
-    const formattedDate = new Date(item.createdAt).toLocaleDateString("de-DE", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  const createPopupContent = useCallback(
+    (item: MapItem) => {
+      const imageUrl =
+        item.images && item.images.length > 0
+          ? `http://localhost:5000${item.images[0].url}`
+          : null;
+      const formattedDate = new Date(item.createdAt).toLocaleDateString(
+        "de-DE",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }
+      );
 
-    return `
+      return `
       <div class="items-map-popup ${isDarkMode ? "dark-mode" : ""}">
         ${
           imageUrl
@@ -191,7 +199,9 @@ export function ItemsMap({
         </div>
       </div>
     `;
-  };
+    },
+    [isDarkMode]
+  );
 
   // Initialize map and add markers
   useEffect(() => {
@@ -278,11 +288,12 @@ export function ItemsMap({
       }
       isInitialized.current = false;
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only initialize once - isDarkMode is handled by separate effect below
 
-  // Update map style when dark mode changes
+  // Update map style when dark mode changes (only if map is already initialized)
   useEffect(() => {
-    if (map.current && map.current.loaded()) {
+    if (map.current && map.current.loaded() && isInitialized.current) {
       const newStyle = isDarkMode
         ? "mapbox://styles/mapbox/dark-v11"
         : "mapbox://styles/mapbox/streets-v12";
@@ -397,7 +408,7 @@ export function ItemsMap({
       "ItemsMap: Finished marker update, total markers:",
       markers.current.length
     );
-  }, [items]);
+  }, [items, createPopupContent]);
 
   // Update markers when items change or map loads
   useEffect(() => {

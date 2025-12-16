@@ -102,11 +102,12 @@ export function MapPicker({
       }
       isInitialized.current = false;
     };
-  }, []); // Empty dependency array - only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only initialize once - isDarkMode, initialLat, initialLng handled by separate effects
 
-  // Update map style when dark mode changes
+  // Update map style when dark mode changes (only if map is already initialized)
   useEffect(() => {
-    if (map.current && map.current.loaded()) {
+    if (map.current && map.current.loaded() && isInitialized.current) {
       const newStyle = isDarkMode
         ? "mapbox://styles/mapbox/dark-v11"
         : "mapbox://styles/mapbox/streets-v12";

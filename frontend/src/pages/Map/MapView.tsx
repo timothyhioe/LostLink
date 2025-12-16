@@ -68,11 +68,17 @@ export default function MapView() {
 
         const data = await response.json();
         const transformedItems: MapItem[] = (data.items || [])
-          .map((item: any) => ({
-            ...item,
-            longitude: item.coordinates?.longitude ?? item.longitude,
-            latitude: item.coordinates?.latitude ?? item.latitude,
-          }))
+          .map(
+            (
+              item: MapItem & {
+                coordinates?: { longitude?: number; latitude?: number };
+              }
+            ) => ({
+              ...item,
+              longitude: item.coordinates?.longitude ?? item.longitude,
+              latitude: item.coordinates?.latitude ?? item.latitude,
+            })
+          )
           // Filter to only show items with status 'open' or 'matched'
           .filter(
             (item: MapItem) =>
