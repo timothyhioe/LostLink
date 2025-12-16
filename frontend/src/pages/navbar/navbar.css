@@ -51,7 +51,6 @@
   max-width: 30vw;
   transition: background-color 0.3s ease;
   border: 2px solid var(--color-primary);
-
 }
 
 .navbar.dark-mode .navbar-search-container {
@@ -73,7 +72,6 @@
 .navbar.dark-mode .navbar-search-input {
   color: #e0e0e0;
 }
-
 
 .navbar-search-input::placeholder {
   color: #999;
@@ -102,6 +100,36 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.navbar-map-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  color: black;
+}
+
+.navbar.dark-mode .navbar-map-button {
+  color: white;
+}
+
+.navbar-map-button svg {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.navbar-map-button:hover {
+  transform: translateY(-1.5px);
+}
+
+.navbar-map-button:active {
+  transform: translateY(0px);
 }
 
 .navbar-post-button {
@@ -390,24 +418,20 @@
 
   .navbar-search-input {
     font-size: 0.8rem;
-        width: 20vw;
-
+    width: 20vw;
   }
 
   .navbar-search-btn {
     font-size: 0.7rem;
-
   }
 
   .navbar-search-input {
     font-size: 0.8rem;
-        width: 20vw;
-
+    width: 20vw;
   }
 
   .navbar-search-btn {
     font-size: 0.7rem;
-
   }
 
   .navbar-menu-toggle {
@@ -496,7 +520,7 @@
 /* mobile */
 @media (max-width: 480px) {
   .navbar-container {
-    padding: 1vh 4vw
+    padding: 1vh 4vw;
   }
 
   .navbar-left {
@@ -516,13 +540,11 @@
 
   .navbar-search-input {
     font-size: 0.8rem;
-        width: 20vw;
-
+    width: 20vw;
   }
 
   .navbar-search-btn {
     font-size: 0.7rem;
-
   }
 
   .navbar-menu-toggle {

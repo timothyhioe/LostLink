@@ -146,6 +146,37 @@ export default function Navbar({
             </button>
 
             <button
+              className="navbar-map-button"
+              onClick={handleMapClick}
+              title="Map"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M21 10C21 17 12 23 12 23S3 17 3 10C3 5.58172 6.58172 2 12 2C17.4183 2 21 5.58172 21 10Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle
+                  cx="12"
+                  cy="10"
+                  r="3"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            <button
               className="navbar-theme-toggle"
               onClick={() => onThemeToggle(!isDarkMode)}
               title={isDarkMode ? "Light Mode" : "Dark Mode"}
