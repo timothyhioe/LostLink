@@ -94,6 +94,41 @@ export default function MapView() {
     fetchItems();
   }, [typeFilter]);
 
+  // Sync theme with localStorage when component mounts or window gains focus
+  useEffect(() => {
+    const syncTheme = () => {
+      const savedTheme = localStorage.getItem("theme");
+      const shouldBeDark = savedTheme === "dark";
+      if (isDarkMode !== shouldBeDark) {
+        setIsDarkMode(shouldBeDark);
+      }
+    };
+
+    // Sync on mount
+    syncTheme();
+
+    // Sync when window gains focus (user navigates back to this tab)
+    const handleFocus = () => {
+      syncTheme();
+    };
+
+    // Listen for custom theme change events (from Navbar)
+    const handleThemeChange = () => {
+      syncTheme();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("themechange", handleThemeChange as EventListener);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener(
+        "themechange",
+        handleThemeChange as EventListener
+      );
+    };
+  }, [isDarkMode]);
+
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
@@ -103,6 +138,8 @@ export default function MapView() {
   const handleThemeToggle = (isDark: boolean) => {
     setIsDarkMode(isDark);
     localStorage.setItem("theme", isDark ? "dark" : "light");
+    // Dispatch custom event so other pages can sync
+    window.dispatchEvent(new Event("themechange"));
   };
 
   const handleLogoClick = () => {
