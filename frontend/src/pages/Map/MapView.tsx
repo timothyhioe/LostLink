@@ -37,23 +37,16 @@ interface MapItem {
 }
 
 export default function MapView() {
-  const [items, setItems] = useState<MapItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<MapItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Filter states
   const [typeFilter, setTypeFilter] = useState<"lost" | "found">("found");
-  const [showSidebar, setShowSidebar] = useState(false);
 
   // Fetch items from API
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
         // Build query parameters
         const params = new URLSearchParams();
         params.append("type", typeFilter);
@@ -82,15 +75,9 @@ export default function MapView() {
               item.status === "open" || item.status === "matched"
           );
 
-        setItems(transformedItems);
         setFilteredItems(transformedItems);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "An error occurred";
-        setError(message);
         console.error("Error fetching items:", err);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -110,21 +97,6 @@ export default function MapView() {
 
   const handleLogoClick = () => {
     window.location.href = "/";
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open":
-        return "#4caf50";
-      case "matched":
-        return "#ff9800";
-      case "resolved":
-        return "#2196f3";
-      case "closed":
-        return "#9e9e9e";
-      default:
-        return "#666";
-    }
   };
 
   return (
@@ -153,103 +125,15 @@ export default function MapView() {
               <option value="lost">Lost</option>
             </select>
           </div>
-
-          <button
-            className="map-view-sidebar-toggle"
-            onClick={() => setShowSidebar(!showSidebar)}
-            title={showSidebar ? "Hide item list" : "Show item list"}
-          >
-            {showSidebar ? "Hide List" : "Show List"}
-          </button>
         </div>
 
-        {/* Main content area */}
-        <div className="map-view-content">
-          {/* Map */}
-          <div className="map-view-map-container">
-            <ItemsMap
-              apiBaseUrl={API_BASE_URL}
-              className="map-view-items-map"
-              items={filteredItems}
-            />
-          </div>
-
-          {/* Sidebar with item list */}
-          {showSidebar && (
-            <div className="map-view-sidebar">
-              <div className="map-view-sidebar-header">
-                <h3>Items ({filteredItems.length})</h3>
-                <button
-                  className="map-view-sidebar-close"
-                  onClick={() => setShowSidebar(false)}
-                >
-                  ×
-                </button>
-              </div>
-              <div className="map-view-sidebar-content">
-                {filteredItems.length === 0 ? (
-                  <p className="map-view-sidebar-empty">
-                    No items found with current filters
-                  </p>
-                ) : (
-                  filteredItems.map((item) => {
-                    const imageUrl =
-                      item.images && item.images.length > 0
-                        ? `http://localhost:5000${item.images[0].url}`
-                        : null;
-                    const formattedDate = new Date(
-                      item.createdAt
-                    ).toLocaleDateString("de-DE", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    });
-
-                    return (
-                      <div key={item.id} className="map-view-sidebar-item">
-                        {imageUrl && (
-                          <img
-                            src={imageUrl}
-                            alt={item.title}
-                            className="map-view-sidebar-item-image"
-                          />
-                        )}
-                        <div className="map-view-sidebar-item-content">
-                          <div className="map-view-sidebar-item-header">
-                            <span
-                              className={`map-view-sidebar-item-type map-view-sidebar-item-type-${item.type}`}
-                            >
-                              {item.type === "lost" ? "Verloren" : "Gefunden"}
-                            </span>
-                            <span
-                              className="map-view-sidebar-item-status"
-                              style={{ color: getStatusColor(item.status) }}
-                            >
-                              {item.status}
-                            </span>
-                          </div>
-                          <h4 className="map-view-sidebar-item-title">
-                            {item.title}
-                          </h4>
-                          <p className="map-view-sidebar-item-description">
-                            {item.description || "No description"}
-                          </p>
-                          {item.buildingName && (
-                            <p className="map-view-sidebar-item-location">
-                              📍 {item.buildingName}
-                            </p>
-                          )}
-                          <p className="map-view-sidebar-item-date">
-                            📅 {formattedDate}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
+        {/* Map */}
+        <div className="map-view-map-container">
+          <ItemsMap
+            apiBaseUrl={API_BASE_URL}
+            className="map-view-items-map"
+            items={filteredItems}
+          />
         </div>
       </div>
     </div>
