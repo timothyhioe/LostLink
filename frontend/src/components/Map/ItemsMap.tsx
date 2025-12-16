@@ -40,12 +40,18 @@ interface ItemsMapProps {
   className?: string;
   style?: React.CSSProperties;
   apiBaseUrl?: string;
+  items?: MapItem[]; // Optional: pass items directly instead of fetching
+  typeFilter?: "all" | "lost" | "found"; // Optional: filter by type
+  statusFilter?: "all" | "open" | "matched" | "resolved" | "closed"; // Optional: filter by status
 }
 
 export function ItemsMap({
   className,
   style,
   apiBaseUrl = "http://localhost:5000/api",
+  items: providedItems,
+  typeFilter,
+  statusFilter,
 }: ItemsMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -57,13 +63,36 @@ export function ItemsMap({
   const isInitialized = useRef(false);
   const isUpdatingMarkers = useRef(false);
 
-  // Fetch items from API
+  // Use provided items or fetch from API
   useEffect(() => {
+    if (providedItems) {
+      // Use provided items (from parent component)
+      setItems(providedItems);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    // Fetch items from API
     const fetchItems = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${apiBaseUrl}/items`);
+
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (typeFilter && typeFilter !== "all") {
+          params.append("type", typeFilter);
+        }
+        if (statusFilter && statusFilter !== "all") {
+          params.append("status", statusFilter);
+        }
+
+        const queryString = params.toString();
+        const url = `${apiBaseUrl}/items${
+          queryString ? `?${queryString}` : ""
+        }`;
+        const response = await fetch(url);
 
         if (!response.ok) {
           throw new Error("Failed to fetch items");
@@ -93,7 +122,7 @@ export function ItemsMap({
     };
 
     fetchItems();
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, providedItems, typeFilter, statusFilter]);
 
   // Create custom marker element
   const createMarkerElement = (type: "lost" | "found") => {

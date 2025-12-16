@@ -1,0 +1,351 @@
+/* ===== MAP VIEW PAGE ===== */
+
+.map-view-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.map-view-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Filters */
+.map-view-filters {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--color-background-light);
+  border-bottom: 2px solid var(--color-primary);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.map-view-page.dark-mode .map-view-filters {
+  background-color: var(--color-background-dark);
+}
+
+.map-view-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.map-view-filter-group label {
+  font-weight: 600;
+  color: black;
+  font-size: 0.95rem;
+}
+
+.map-view-page.dark-mode .map-view-filter-group label {
+  color: white;
+}
+
+.map-view-filter-select {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-primary);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background-color: white;
+  color: black;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.map-view-page.dark-mode .map-view-filter-select {
+  background-color: #444444;
+  color: white;
+}
+
+.map-view-filter-select:focus {
+  border-color: var(--color-secondary);
+}
+
+.map-view-sidebar-toggle {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-secondary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-left: auto;
+}
+
+.map-view-sidebar-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(250, 205, 0, 0.3);
+}
+
+.map-view-sidebar-toggle:active {
+  transform: translateY(0);
+}
+
+/* Main content area */
+.map-view-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Map container */
+.map-view-map-container {
+  flex: 1;
+  position: relative;
+  min-width: 0; /* Allows flex item to shrink */
+}
+
+.map-view-items-map {
+  width: 100%;
+  height: 100%;
+}
+
+.map-view-loading,
+.map-view-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+}
+
+.map-view-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.map-view-page.dark-mode .map-view-loading {
+  background: #1f2937;
+  color: #f3f4f6;
+}
+
+/* Sidebar */
+.map-view-sidebar {
+  width: 350px;
+  background-color: var(--color-background-light);
+  border-left: 2px solid var(--color-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.map-view-page.dark-mode .map-view-sidebar {
+  background-color: var(--color-background-dark);
+  border-left-color: var(--color-primary);
+}
+
+.map-view-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.map-view-sidebar-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: black;
+}
+
+.map-view-page.dark-mode .map-view-sidebar-header h3 {
+  color: white;
+}
+
+.map-view-sidebar-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-primary);
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.map-view-sidebar-close:hover {
+  transform: scale(1.2);
+}
+
+.map-view-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.map-view-sidebar-empty {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.map-view-page.dark-mode .map-view-sidebar-empty {
+  color: #999;
+}
+
+/* Sidebar item */
+.map-view-sidebar-item {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.map-view-page.dark-mode .map-view-sidebar-item {
+  background-color: #2d3748;
+  border-color: #4a5568;
+}
+
+.map-view-sidebar-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.map-view-sidebar-item-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.map-view-sidebar-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.map-view-sidebar-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.map-view-sidebar-item-type {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.map-view-sidebar-item-type-lost {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.map-view-sidebar-item-type-found {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.map-view-sidebar-item-status {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.map-view-sidebar-item-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: black;
+}
+
+.map-view-page.dark-mode .map-view-sidebar-item-title {
+  color: white;
+}
+
+.map-view-sidebar-item-description {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.map-view-page.dark-mode .map-view-sidebar-item-description {
+  color: #d1d5db;
+}
+
+.map-view-sidebar-item-location,
+.map-view-sidebar-item-date {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-view-page.dark-mode .map-view-sidebar-item-location,
+.map-view-page.dark-mode .map-view-sidebar-item-date {
+  color: #9ca3af;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .map-view-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .map-view-filter-group {
+    width: 100%;
+  }
+
+  .map-view-filter-select {
+    width: 100%;
+  }
+
+  .map-view-sidebar-toggle {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .map-view-sidebar {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+
+  .map-view-content {
+    position: relative;
+  }
+}
+
