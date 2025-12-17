@@ -24,6 +24,16 @@ html,body,#root{
   --color-accent: #E3CAA5;
   --color-background-light:white;
   --color-background-dark:#222222;
+  --color-offwhite:  #F7F7FB;
+  --color-gray: #717182;
+
+  --color-status-blue: #123581;
+  --color-status-red: #AE0101;
+
+  --color-dark-bg: #1a1a1a;
+  --color-dark-bg-secondary: #252525;
+  --color-dark-text: #e8e8e8;
+  --color-dark-text-secondary: #b0b0b0;
 }
 
 h1, h2, h3, h4, h5, h6, p, blockquote, li, p {

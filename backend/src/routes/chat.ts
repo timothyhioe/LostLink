@@ -36,6 +36,11 @@ router.get('/conversations', authenticate, async (req: Request, res: Response) =
     for (const msg of messages) {
       const otherUserId = msg.senderId === userId ? msg.recipientId : msg.senderId
       
+      // Skip self-conversations
+      if (otherUserId === userId) {
+        continue
+      }
+      
       if (!conversationMap.has(otherUserId)) {
         conversationMap.set(otherUserId, {
           userId: otherUserId,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import './NavbarChat.css'
 import { useChat } from '../../contexts/ChatContext'
 
@@ -39,10 +39,10 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
       
       currentRoomRef.current = newRoomId
     }
-  }, [selectedConversation?.userId, selectedConversation?.userName, joinChat, leaveChat])
+  }, [selectedConversation, joinChat, leaveChat])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
   }, [messages])
 
   const handleSendMessage = () => {
@@ -59,10 +59,29 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
     }
   }
 
+  const handleBackClick = useCallback(() => {
+    setSelectedConversation(null)
+  }, [setSelectedConversation])
+
+  // Handle phone back button
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedConversation) {
+        handleBackClick()
+      } else {
+        onClose()
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [selectedConversation, onClose, handleBackClick])
+
   const handleDeleteConversation = () => {
     if (selectedConversation?.userId) {
       if (confirm(`Delete conversation with ${selectedConversation.userName}?`)) {
         deleteConversation(selectedConversation.userId)
+        handleBackClick()
       }
     }
   }
@@ -85,7 +104,7 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
 
           <div className="navbar-chat-body">
             {/* Conversations List */}
-            <div className="navbar-chat-list">
+            <div className={`navbar-chat-list ${selectedConversation ? 'hidden' : ''}`}>
               <div className="navbar-chat-list-header">Conversations</div>
               {conversations.length === 0 ? (
                 <div className="navbar-chat-empty">No conversations yet</div>
@@ -110,8 +129,15 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
 
             {/* Chat Window */}
             {selectedConversation ? (
-              <div className="navbar-chat-window">
+              <div className={`navbar-chat-window ${selectedConversation ? 'active' : ''}`}>
                 <div className="navbar-chat-window-header">
+                  <button 
+                    className="navbar-chat-back-btn"
+                    onClick={() => setSelectedConversation(null)}
+                    title="Back to conversations"
+                  >
+                    ← Back
+                  </button>
                   <h4>{selectedConversation.userName}</h4>
                   <button 
                     className="navbar-chat-delete-btn"
@@ -126,20 +152,32 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
                   {messages.length === 0 ? (
                     <div className="navbar-chat-no-messages">No messages yet. Start the conversation!</div>
                   ) : (
-                    messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`navbar-chat-message ${msg.senderId === currentUserId ? 'sent' : 'received'}`}
-                      >
-                        <div className="navbar-chat-message-content">{msg.content}</div>
-                        <div className="navbar-chat-message-time">
-                          {new Date(msg.timestamp).toLocaleTimeString('de-DE', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                    messages.map((msg, index) => {
+                      const currentDate = new Date(msg.timestamp).toLocaleDateString('de-DE');
+                      const previousDate = index > 0 ? new Date(messages[index - 1].timestamp).toLocaleDateString('de-DE') : null;
+                      const showDateSeparator = currentDate !== previousDate;
+
+                      return (
+                        <div key={msg.id}>
+                          {showDateSeparator && (
+                            <div className="navbar-chat-date-separator">
+                              {currentDate}
+                            </div>
+                          )}
+                          <div
+                            className={`navbar-chat-message ${msg.senderId === currentUserId ? 'sent' : 'received'}`}
+                          >
+                            <div className="navbar-chat-message-content">{msg.content}</div>
+                            <div className="navbar-chat-message-time">
+                              {new Date(msg.timestamp).toLocaleTimeString('de-DE', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                   <div ref={messagesEndRef} />
                 </div>

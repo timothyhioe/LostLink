@@ -52,6 +52,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'lost' | 'found'>('all');
 
   // Fetch items from backend
   useEffect(() => {
@@ -81,13 +82,13 @@ export default function Home() {
             image:
               item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : "",
             what: item.title,
-            where: `Wo wurde gefunden: ${item.buildingName}`,
-            location_display: `Wo zu finden ist: ${item.buildingName}`,
-            when: `Wann wurde gefunden: ${new Date(
+            where: `Where found: ${item.buildingName}`,
+            location_display: `Location: ${item.buildingName}`,
+            when: `When found: ${new Date(
               item.createdAt
-            ).toLocaleDateString("de-DE")} ${new Date(
+            ).toLocaleDateString("en-US")} ${new Date(
               item.createdAt
-            ).toLocaleTimeString("de-DE", {
+            ).toLocaleTimeString("en-US", {
               hour: "2-digit",
               minute: "2-digit",
             })}`,
@@ -183,6 +184,28 @@ export default function Home() {
       <div className="home-main-content">
         {/* Left side - Items list */}
         <div className="home-items-column">
+          {/* Filter buttons */}
+          <div className="home-filters">
+            <button 
+              className={`home-filter-btn ${filterType === 'all' ? 'active' : ''}`}
+              onClick={() => setFilterType('all')}
+            >
+              All
+            </button>
+            <button 
+              className={`home-filter-btn home-filter-btn-lost ${filterType === 'lost' ? 'active' : ''}`}
+              onClick={() => setFilterType('lost')}
+            >
+              Lost
+            </button>
+            <button 
+              className={`home-filter-btn home-filter-btn-found ${filterType === 'found' ? 'active' : ''}`}
+              onClick={() => setFilterType('found')}
+            >
+              Found
+            </button>
+          </div>
+
           {loading ? (
             <p style={{ textAlign: "center", padding: "2rem" }}>
               Loading items...
@@ -196,7 +219,9 @@ export default function Home() {
               No items found
             </p>
           ) : (
-            items.map((item) => (
+            items
+              .filter(item => filterType === 'all' || item.type === filterType)
+              .map((item) => (
               <div key={item.id} className="home-item-row">
                 <div className="home-item-image">
                   {item.image ? (
@@ -218,37 +243,52 @@ export default function Home() {
                 </div>
 
                 <div className="home-item-details">
-                  <p className="home-item-type-label">
-                    {item.type === "lost" ? "Verloren" : "Gefunden"}
-                  </p>
+                  <div className="home-item-header">
+                    <span className={`home-item-type-label ${item.type === 'lost' ? 'lost' : 'found'}`}>
+                      {item.type === 'lost' ? 'Lost' : 'Found'}
+                    </span>
+                  </div>
                   <h3 className="home-item-what">{item.what}</h3>
-                  <p className="home-item-description">
-                    Description: {item.description}
-                  </p>
-                  <p className="home-item-where">{item.where}</p>
-                  <p className="home-item-location">{item.location_display}</p>
-                  <p className="home-item-when">{item.when}</p>
+                  <p className="home-item-description">{item.description}</p>
+                  
+                  <div className="home-item-meta">
+                    <div className="home-item-location-row">
+                      <img src="src/assets/Home/location_logo.png" alt="location" className="home-item-icon" />
+                      <p className="home-item-location-text">{item.buildingName}</p>
+                    </div>
+                    <div className="home-item-date-row">
+                      <img src="src/assets/Home/date_logo.png" alt="date" className="home-item-icon" />
+                      <p className="home-item-date-text">
+                        {new Date(item.createdAt).toLocaleDateString('de-DE')} {new Date(item.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="home-item-right">
-                  <p className="home-founder-label">
-                    {item.type === "lost"
-                      ? "Wer hat das verloren:"
-                      : "Wer hat das gefunden:"}
-                  </p>
-                  <p className="home-founder-name">{item.founder}</p>
-                  <button
-                    className="home-contact-button"
-                    onClick={() => handleContactButton(item)}
-                    disabled={item.userId === currentUserId}
-                    title={
-                      item.userId === currentUserId
-                        ? "You cannot contact yourself"
-                        : "Click to chat"
-                    }
-                  >
-                    Kontaktieren
-                  </button>
+                  <div className="home-founder-card">
+                    <div className="home-founder-header">
+                      <div className="home-founder-avatar">
+                        <img 
+                          className="home-founder-image" 
+                          alt="Profile" 
+                          src="/src/assets/Navbar/profile-circle_.png"
+                        />
+                      </div>
+                      <div className="home-founder-info">
+                        <p className="home-founder-label">{item.type === 'lost' ? 'Lost by' : 'Found by'}</p>
+                        <p className="home-founder-name">{item.founder}</p>
+                      </div>
+                    </div>
+                    <button 
+                      className="home-contact-button"
+                      onClick={() => handleContactButton(item)}
+                      disabled={item.userId === currentUserId}
+                      title={item.userId === currentUserId ? 'You cannot contact yourself' : 'Click to chat'}
+                    >
+                      Contact
+                    </button>
+                  </div>
                 </div>
               </div>
             ))

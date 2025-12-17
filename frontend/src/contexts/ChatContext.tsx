@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import io, { type Socket } from 'socket.io-client'
 
-/* eslint-disable react-hooks/set-state-in-effect, react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components */
 
 export interface ChatMessage {
   id: string
@@ -98,7 +98,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         if (response.ok) {
           const data = await response.json()
           console.log('[Chat] Loaded conversations from database:', data.conversations)
-          setConversations(data.conversations)
+          // Filter out self-conversations
+          const filteredConversations = data.conversations.filter((conv: ChatConversation) => conv.userId !== userId)
+          setConversations(filteredConversations)
         }
       } catch (error) {
         console.error('[Chat] Failed to load conversations from database:', error)
@@ -134,7 +136,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     })
 
     // Listen for incoming messages
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     newSocket.on('receive_message', (message: ChatMessage) => {
       console.log(`[Message] Received from ${message.senderName}: "${message.content}"`)
       setMessages(prev => [...prev, message])
@@ -170,7 +171,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     })
 
     // Listen for message notifications (when recipient isn't in the room)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     newSocket.on('new_message_notification', (data: { senderId: string; senderName: string; content: string }) => {
       console.log(`[Notification] Message from ${data.senderName}`)
       
@@ -220,7 +220,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     })
 
     // Listen for message history
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     newSocket.on('message_history', (history: ChatMessage[]) => {
       setMessages(history)
     })
@@ -233,6 +232,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       console.error(`[Connection Error] ${error}`)
     })
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSocket(newSocket)
 
     return () => {
@@ -258,6 +258,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const parsedUser = JSON.parse(user)
     const senderId = parsedUser.id || parsedUser._id
     const senderName = parsedUser.name || 'Unknown'
+
+    // Prevent self-messages
+    if (senderId === recipientId) {
+      console.warn('[Chat] Cannot send messages to yourself')
+      return
+    }
 
     socket.emit('send_message', {
       senderId,
@@ -370,6 +376,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const openChatWithUser = (userId: string, userName: string) => {
+    const user = localStorage.getItem('user')
+    if (!user) return
+
+    const parsedUser = JSON.parse(user)
+    const currentUserId = parsedUser.id || parsedUser._id
+
+    // Prevent self-conversations
+    if (userId === currentUserId) {
+      console.warn('[Chat] Cannot open conversation with yourself')
+      return
+    }
+
     // First ensure conversation exists
     setConversations(prev => {
       const exists = prev.find(c => c.userId === userId)
