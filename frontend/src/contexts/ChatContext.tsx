@@ -232,6 +232,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       console.error(`[Connection Error] ${error}`)
     })
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSocket(newSocket)
 
     return () => {

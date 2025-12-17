@@ -53,6 +53,7 @@ export default function Navbar({
   // Open chat when chatOpenTrigger changes (for opening chat programmatically)
   useEffect(() => {
     if (chatOpenTrigger > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsChatOpen(true);
     }
   }, [chatOpenTrigger]);

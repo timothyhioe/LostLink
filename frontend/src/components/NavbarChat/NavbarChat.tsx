@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import './NavbarChat.css'
 import { useChat } from '../../contexts/ChatContext'
 
@@ -59,9 +59,9 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
     }
   }
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     setSelectedConversation(null)
-  }
+  }, [setSelectedConversation])
 
   // Handle phone back button
   useEffect(() => {
