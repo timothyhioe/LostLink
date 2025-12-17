@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1765987412916,
+      "tag": "0000_chemical_oracle",
+      "breakpoints": true
+    }
+  ]
+}

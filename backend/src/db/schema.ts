@@ -165,3 +165,4 @@ export type ItemImage = typeof itemImages.$inferSelect;
 export type NewItemImage = typeof itemImages.$inferInsert;
 export type ItemTag = typeof itemTags.$inferSelect;
 export type NewItemTag = typeof itemTags.$inferInsert;
+export * from './schema/chat'

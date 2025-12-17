@@ -71,6 +71,24 @@ CREATE TABLE item_tags (
 CREATE INDEX idx_item_tags_item_id ON item_tags(item_id);
 CREATE INDEX idx_item_tags_tag ON item_tags(tag);
 
+-- Chat messages table
+CREATE TABLE chat_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content VARCHAR(5000) NOT NULL,
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- Indexes for chat messages table
+CREATE INDEX idx_chat_messages_sender_id ON chat_messages(sender_id);
+CREATE INDEX idx_chat_messages_recipient_id ON chat_messages(recipient_id);
+CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at DESC);
+CREATE INDEX idx_chat_messages_unread ON chat_messages(recipient_id, read);
+
 -- Update trigger for updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -84,4 +102,7 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_items_updated_at BEFORE UPDATE ON items
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_chat_messages_updated_at BEFORE UPDATE ON chat_messages
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
