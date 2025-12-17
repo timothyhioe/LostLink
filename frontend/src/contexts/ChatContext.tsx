@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import io, { type Socket } from 'socket.io-client'
 
-/* eslint-disable react-hooks/set-state-in-effect, react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components */
 
 export interface ChatMessage {
   id: string
@@ -136,7 +136,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     })
 
     // Listen for incoming messages
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     newSocket.on('receive_message', (message: ChatMessage) => {
       console.log(`[Message] Received from ${message.senderName}: "${message.content}"`)
       setMessages(prev => [...prev, message])
@@ -172,7 +171,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     })
 
     // Listen for message notifications (when recipient isn't in the room)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     newSocket.on('new_message_notification', (data: { senderId: string; senderName: string; content: string }) => {
       console.log(`[Notification] Message from ${data.senderName}`)
       
@@ -222,7 +220,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     })
 
     // Listen for message history
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     newSocket.on('message_history', (history: ChatMessage[]) => {
       setMessages(history)
     })

@@ -5,7 +5,6 @@ import ItemPostForm from "./itemPostForm/itemPostForm";
 import NavbarChat from "../../components/NavbarChat/NavbarChat";
 import { useChat } from "../../contexts/ChatContext";
 
-/* eslint-disable react-hooks/set-state-in-effect */
 import messageIcon from "../../assets/Navbar/message_.png";
 import messageIconWhite from "../../assets/Navbar/message-white.png";
 import profileIcon from "../../assets/Navbar/profile-circle_.png";
@@ -28,8 +27,7 @@ export default function Navbar({
   onThemeToggle,
   onItemPosted,
 }: NavbarProps) {
-  const { selectedConversationId, unreadNotifications, chatOpenTrigger } =
-    useChat();
+  const { unreadNotifications, chatOpenTrigger } = useChat();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPostFormOpen, setIsPostFormOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);

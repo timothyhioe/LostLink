@@ -39,7 +39,7 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
       
       currentRoomRef.current = newRoomId
     }
-  }, [selectedConversation?.userId, selectedConversation?.userName, joinChat, leaveChat])
+  }, [selectedConversation, joinChat, leaveChat])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
@@ -75,7 +75,7 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
 
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [selectedConversation, onClose])
+  }, [selectedConversation, onClose, handleBackClick])
 
   const handleDeleteConversation = () => {
     if (selectedConversation?.userId) {
