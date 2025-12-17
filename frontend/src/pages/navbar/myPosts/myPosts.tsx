@@ -182,12 +182,26 @@ export default function MyItems() {
               </div>
 
               <div className="my-item-details">
-                <p className="my-item-type-label">{item.type === 'lost' ? 'Verloren' : 'Gefunden'}</p>
+                <div className="my-item-header">
+                  <span className={`my-item-type-label ${item.type === 'lost' ? 'lost' : 'found'}`}>
+                    {item.type === 'lost' ? 'Verloren' : 'Gefunden'}
+                  </span>
+                </div>
                 <h3 className="my-item-what">{item.what}</h3>
-                <p className="my-item-description">Description: {item.description}</p>
-                <p className="my-item-where">{item.where}</p>
-                <p className="my-item-location">{item.location_display}</p>
-                <p className="my-item-when">{item.when}</p>
+                <p className="my-item-description">{item.description}</p>
+                
+                <div className="my-item-meta">
+                  <div className="my-item-location-row">
+                    <img src="src/assets/Home/location_logo.png" alt="location" className="my-item-icon" />
+                    <p className="my-item-location-text">{item.buildingName}</p>
+                  </div>
+                  <div className="my-item-date-row">
+                    <img src="src/assets/Home/date_logo.png" alt="date" className="my-item-icon" />
+                    <p className="my-item-date-text">
+                      {new Date(item.createdAt).toLocaleDateString('de-DE')} {new Date(item.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="my-item-right">

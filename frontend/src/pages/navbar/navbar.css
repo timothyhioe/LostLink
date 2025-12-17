@@ -1,7 +1,7 @@
 /* ===== NAVBAR ===== */
 .navbar {
   background-color: var(--color-background-light);
-  border-bottom: 3px solid var(--color-primary);
+  border-bottom: 1px solid #e0e0e0;
   padding: 0;
   position: sticky;
   top: 0;
@@ -11,30 +11,34 @@
 
 .navbar.dark-mode {
   background-color: var(--color-background-dark);
+  border-bottom-color: #333;
 }
 
 .navbar-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
-  gap: 1rem;
+  padding: 2.5vh 6vw;
+  gap: 2rem;
+  max-width: 100%;
+  width: 100%;
 }
 
 .navbar-left {
   display: flex;
   align-items: center;
-  gap: 2rem;
-  flex: 1;
+  gap: 1.5rem;
+  flex: 0 0 auto;
 }
 
 .navbar-logo {
-  font-size: 1.6rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--color-primary);
   margin: 0;
   white-space: nowrap;
   transition: color 0.3s ease;
+  min-width: fit-content;
 }
 
 .navbar.dark-mode .navbar-logo {
@@ -45,10 +49,11 @@
   display: flex;
   align-items: center;
   background-color: #f5f5f5;
-  border-radius: 20px;
-  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  padding: 0.6rem 1.2rem;
   flex: 1;
-  max-width: 30vw;
+  max-width: 500px;
+  min-width: 300px;
   transition: background-color 0.3s ease;
   border: 2px solid var(--color-primary);
 }
@@ -61,8 +66,8 @@
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 0.9rem;
-  padding: 0.5rem;
+  font-size: 1rem;
+  padding: 0.1rem;
   outline: none;
   font-family: inherit;
   color: black;
@@ -100,6 +105,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex: 0 0 auto;
 }
 
 .navbar-map-button {
@@ -134,7 +140,7 @@
 
 .navbar-post-button {
   background-color: var(--color-secondary);
-  color: white;
+  color: black;
   border: none;
   padding: 0.7rem 1.5rem;
   border-radius: 4px;
@@ -182,7 +188,6 @@
 }
 
 .navbar-message-btn,
-.navbar-notification-btn,
 .navbar-profile-btn {
   background: none;
   border: none;
@@ -195,7 +200,6 @@
 }
 
 .navbar-message-btn img,
-.navbar-notification-btn img,
 .navbar-profile-btn img {
   width: 24px;
   height: 24px;
@@ -203,13 +207,11 @@
 }
 
 .navbar-message-btn:hover,
-.navbar-notification-btn:hover,
 .navbar-profile-btn:hover {
   transform: translateY(-1.5px);
 }
 
 .navbar-message-btn:active,
-.navbar-notification-btn:active,
 .navbar-profile-btn:active {
   transform: translateY(0px);
 }
@@ -240,26 +242,31 @@
 }
 
 .navbar-logout-button {
+  background: none;
+  border: none;
+  padding: 0;
+  display: none;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--color-text-light);
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
   background-color: var(--color-primary);
   color: white;
-  border: none;
-  padding: 0.7rem 1.5rem;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 1.1rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  white-space: nowrap;
 }
 
-.navbar-logout-button:hover {
-  transform: translateY(-1.5px);
-  box-shadow: 0 2px 6px rgba(24, 54, 130, 0.15);
-}
-
-.navbar-logout-button:active {
-  transform: translateY(0px);
-  box-shadow: 0 1px 3px rgba(24, 54, 130, 0.1);
+.dropdown-item.logout-item {
+  border-top: 1px solid #ddd;
 }
 
 .navbar-menu-toggle {
@@ -506,6 +513,10 @@
 .navbar-profile-dropdown.dark-mode .dropdown-item:hover {
   background-color: var(--color-primary);
   color: white;
+}
+
+.navbar-profile-dropdown.dark-mode .dropdown-item.logout-item {
+  border-top-color: #444;
 }
 
 @keyframes fadeIn {

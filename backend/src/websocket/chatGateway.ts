@@ -144,6 +144,13 @@ export function registerChatGateway(io: Server): void {
 
       logger.info(`[SOCKET.IO] send_message event - from: ${senderId}, to: ${recipientId}, content: "${content}"`)
 
+      // Prevent self-messages
+      if (senderId === recipientId) {
+        logger.warn(`[SOCKET.IO] Blocked self-message attempt - senderId: ${senderId}`)
+        socket.emit('error', 'Cannot send messages to yourself')
+        return
+      }
+
       if (!senderId || !content) {
         logger.warn(`[SOCKET.IO] send_message validation failed - senderId: ${senderId}, content length: ${content?.length}`)
         socket.emit('error', 'Invalid message data')

@@ -98,7 +98,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         if (response.ok) {
           const data = await response.json()
           console.log('[Chat] Loaded conversations from database:', data.conversations)
-          setConversations(data.conversations)
+          // Filter out self-conversations
+          const filteredConversations = data.conversations.filter((conv: ChatConversation) => conv.userId !== userId)
+          setConversations(filteredConversations)
         }
       } catch (error) {
         console.error('[Chat] Failed to load conversations from database:', error)
@@ -259,6 +261,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const senderId = parsedUser.id || parsedUser._id
     const senderName = parsedUser.name || 'Unknown'
 
+    // Prevent self-messages
+    if (senderId === recipientId) {
+      console.warn('[Chat] Cannot send messages to yourself')
+      return
+    }
+
     socket.emit('send_message', {
       senderId,
       senderName,
@@ -370,6 +378,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const openChatWithUser = (userId: string, userName: string) => {
+    const user = localStorage.getItem('user')
+    if (!user) return
+
+    const parsedUser = JSON.parse(user)
+    const currentUserId = parsedUser.id || parsedUser._id
+
+    // Prevent self-conversations
+    if (userId === currentUserId) {
+      console.warn('[Chat] Cannot open conversation with yourself')
+      return
+    }
+
     // First ensure conversation exists
     setConversations(prev => {
       const exists = prev.find(c => c.userId === userId)

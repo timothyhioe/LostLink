@@ -8,8 +8,6 @@ import { useChat } from "../../contexts/ChatContext";
 /* eslint-disable react-hooks/set-state-in-effect */
 import messageIcon from "../../assets/Navbar/message_.png";
 import messageIconWhite from "../../assets/Navbar/message-white.png";
-import notificationIcon from "../../assets/Navbar/notification_.png";
-import notificationIconWhite from "../../assets/Navbar/notification-white.png";
 import profileIcon from "../../assets/Navbar/profile-circle_.png";
 import profileIconWhite from "../../assets/Navbar/profile-circle-white.png";
 import darkModeIcon from "../../assets/Navbar/dark-mode_.png";
@@ -41,14 +39,6 @@ export default function Navbar({
   // Calculate total unread notifications
   const unreadCount = Object.keys(unreadNotifications).length;
 
-  // Auto-open chat when a conversation is selected or when trigger changes
-
-  useEffect(() => {
-    if (selectedConversationId || chatOpenTrigger > 0) {
-      setIsChatOpen(true);
-    }
-  }, [selectedConversationId, chatOpenTrigger]);
-
   // Handle body scroll when menu is open
   useEffect(() => {
     if (isMenuOpen) {
@@ -61,6 +51,13 @@ export default function Navbar({
       document.body.style.overflow = "auto";
     };
   }, [isMenuOpen]);
+
+  // Open chat when chatOpenTrigger changes (for opening chat programmatically)
+  useEffect(() => {
+    if (chatOpenTrigger > 0) {
+      setIsChatOpen(true);
+    }
+  }, [chatOpenTrigger]);
 
   const handleMenuToggle = () => {
     setIsMenuOpen((prevState) => !prevState);
@@ -123,26 +120,24 @@ export default function Navbar({
       <nav className={`navbar ${isDarkMode ? "dark-mode" : "light-mode"}`}>
         <div className="navbar-container">
           <div className="navbar-left">
-            <h1
-              className="navbar-logo"
-              onClick={handleLogoClick}
-              style={{ cursor: "pointer" }}
-            >
-              LostLink
-            </h1>
-            <div className="navbar-search-container">
-              <input
-                type="text"
-                placeholder="Suche..."
-                className="navbar-search-input"
-              />
-              <button className="navbar-search-btn">Search</button>
-            </div>
+            <h1 className="navbar-logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>LostLink</h1>
+          </div>
+
+          <div className="navbar-search-container">
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              className="navbar-search-input"
+            />
+            <button className="navbar-search-btn">Search</button>
           </div>
 
           <div className="navbar-right">
-            <button className="navbar-post-button" onClick={handlePostClick}>
-              Post
+            <button 
+              className="navbar-post-button"
+              onClick={handlePostClick}
+            >
+              + Post
             </button>
 
             <button
@@ -200,14 +195,7 @@ export default function Navbar({
                 <span className="navbar-message-badge">{unreadCount}</span>
               )}
             </button>
-
-            <button className="navbar-notification-btn" title="Notifications">
-              <img
-                src={isDarkMode ? notificationIconWhite : notificationIcon}
-                alt="Notifications"
-              />
-            </button>
-
+            
             <div className="navbar-profile-container">
               <button
                 className="navbar-profile-btn"
@@ -231,13 +219,18 @@ export default function Navbar({
                   >
                     My Posts
                   </button>
+                  <button 
+                    className="dropdown-item logout-item"
+                    onClick={() => {
+                      setIsProfileDropdownOpen(false)
+                      onLogout()
+                    }}
+                  >
+                    Log Out
+                  </button>
                 </div>
               )}
             </div>
-
-            <button className="navbar-logout-button" onClick={onLogout}>
-              Log Out
-            </button>
           </div>
 
           {/* Mobile menu button */}
@@ -320,18 +313,8 @@ export default function Navbar({
             />{" "}
             Messages
           </button>
-          <button
-            className="navbar-notification-btn navbar-mobile-item"
-            title="Notifications"
-          >
-            <img
-              src={isDarkMode ? notificationIconWhite : notificationIcon}
-              alt="Notifications"
-            />{" "}
-            Notifications
-          </button>
-          <button
-            className="navbar-profile-btn navbar-mobile-item"
+          <button 
+            className="navbar-profile-btn navbar-mobile-item" 
             title="Profile"
             onClick={handleMyPostsClick}
           >

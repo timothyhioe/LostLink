@@ -65,17 +65,7 @@ export default function Login() {
   };
 
   // Development mode - bypass login
-  const handleDevLogin = () => {
-    console.log('=== DEVELOPMENT MODE - SKIPPING LOGIN ===');
-    localStorage.setItem('authToken', 'dev-token-' + Date.now());
-    localStorage.setItem('user', JSON.stringify({
-      id: 'dev-user',
-      name: 'Development User',
-      email: 'dev@localhost',
-      emailVerified: true,
-    }));
-    window.location.href = '/';
-  };
+  // Removed - no longer needed for production
 
   return (
     <div className="login-container">
@@ -116,10 +106,6 @@ export default function Login() {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-
-        <button onClick={handleDevLogin} className="dev-btn">
-          Development Mode
-        </button>
 
         <div className="signup-link">
           Don't have a user? <a href="#signup">Sign up</a>
