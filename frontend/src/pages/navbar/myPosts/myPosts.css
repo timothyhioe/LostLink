@@ -18,8 +18,8 @@
 }
 
 .my-items-page.dark-mode {
-  background-color: var(--color-background-dark);
-  color: #e0e0e0;
+  background-color: var(--color-dark-bg);
+  color: var(--color-dark-text);
 }
 
 .my-items-column {
@@ -35,7 +35,7 @@
 }
 
 .my-items-page.dark-mode .my-items-column {
-  background-color: var(--color-background-dark);
+  background-color: var(--color-dark-bg);
 }
 
 .my-items-header {
@@ -73,11 +73,12 @@
 }
 
 .my-items-page.dark-mode .my-item-row {
-  background-color: #2a2a2a;
+  background-color: var(--color-dark-bg-secondary);
+  border-color: transparent;
 }
 
 .my-items-page.dark-mode .my-item-row:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .my-item-image {
@@ -97,7 +98,7 @@
 }
 
 .my-items-page.dark-mode .my-item-image {
-  background-color: #3a3a3a;
+  background-color: var(--color-dark-bg);
 }
 
 .my-item-image img {
@@ -141,7 +142,7 @@
 }
 
 .my-item-what {
-  font-size: 1.4rem;
+  font-size: 1.7rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -149,19 +150,18 @@
 }
 
 .my-items-page.dark-mode .my-item-what {
-  color: #ffffff;
+  color: var(--color-dark-text);
 }
 
 .my-item-description {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   color: #666;
   line-height: 1.4;
   font-weight: 400;
-  margin: 0.25rem 0 0.75rem 0;
 }
 
 .my-items-page.dark-mode .my-item-description {
-  color: #aaa;
+  color: var(--color-dark-text-secondary);
 }
 
 .my-item-where,
@@ -203,15 +203,15 @@
 
 .my-item-location-text,
 .my-item-date-text {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 1rem;
+  color: black;
   margin: 0;
   line-height: 1.2;
 }
 
 .my-items-page.dark-mode .my-item-location-text,
 .my-items-page.dark-mode .my-item-date-text {
-  color: #999;
+  color: var(--color-dark-text-secondary);
 }
 
 .my-item-right {

@@ -95,9 +95,9 @@ export default function MyItems() {
         ...item,
         image: item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : '',
         what: item.title,
-        where: `Wo wurde gefunden: ${item.buildingName}`,
-        location_display: `Wo zu finden ist: ${item.buildingName}`,
-        when: `Wann wurde gefunden: ${new Date(item.createdAt).toLocaleDateString('de-DE')} ${new Date(item.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`,
+        where: `Where found: ${item.buildingName}`,
+        location_display: `Location: ${item.buildingName}`,
+        when: `When found: ${new Date(item.createdAt).toLocaleDateString('en-US')} ${new Date(item.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
         founder: item.user?.name || 'Unknown'
       }))
 
@@ -159,7 +159,7 @@ export default function MyItems() {
       {/* Main content */}
       <div className="my-items-column">
         <div className="my-items-header">
-          <h2>Meine Posts</h2>
+          <h2>My Posts</h2>
         </div>
 
         {loading ? (
@@ -184,7 +184,7 @@ export default function MyItems() {
               <div className="my-item-details">
                 <div className="my-item-header">
                   <span className={`my-item-type-label ${item.type === 'lost' ? 'lost' : 'found'}`}>
-                    {item.type === 'lost' ? 'Verloren' : 'Gefunden'}
+                    {item.type === 'lost' ? 'Lost' : 'Found'}
                   </span>
                 </div>
                 <h3 className="my-item-what">{item.what}</h3>
@@ -198,7 +198,7 @@ export default function MyItems() {
                   <div className="my-item-date-row">
                     <img src="src/assets/Home/date_logo.png" alt="date" className="my-item-icon" />
                     <p className="my-item-date-text">
-                      {new Date(item.createdAt).toLocaleDateString('de-DE')} {new Date(item.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(item.createdAt).toLocaleDateString('en-US')} {new Date(item.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
@@ -210,7 +210,7 @@ export default function MyItems() {
                   onClick={() => handleDeleteItem(item.id)}
                   disabled={deletingId === item.id}
                 >
-                  {deletingId === item.id ? 'Deleting...' : 'Löschen'}
+                  {deletingId === item.id ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
