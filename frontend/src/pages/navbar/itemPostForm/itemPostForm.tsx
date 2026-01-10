@@ -33,6 +33,7 @@ export default function ItemPostForm({
     latitude: "",
     longitude: "",
   });
+  const [postLimitReached, setPostLimitReached] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -46,6 +47,26 @@ export default function ItemPostForm({
     lat: number;
     lng: number;
   } | null>(null);
+
+  // Check post limit on open
+  useEffect(() => {
+    const checkPostLimit = async () => {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
+      try {
+        const response = await fetch('http://localhost:5000/api/items/my', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPostLimitReached(data.items.length >= 10);
+        }
+      } catch {
+        // Error checking post limit, silently ignore
+      }
+    };
+    if (isOpen) checkPostLimit();
+  }, [isOpen]);
 
   // Fetch buildings on mount
   useEffect(() => {
@@ -66,6 +87,17 @@ export default function ItemPostForm({
   }, [isOpen]);
 
   if (!isOpen) return null;
+  if (postLimitReached) {
+    return (
+      <div className={`item-post-form-modal ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
+        <div className="item-post-form-container">
+          <h2>Post Limit Reached</h2>
+          <p style={{ color: 'red' }}>You have reached the maximum of 10 posts. Delete an item to add a new one.</p>
+          <button className="item-post-form-cancel" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    );
+  }
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -192,6 +224,9 @@ export default function ItemPostForm({
       setSelectedCoordinates(null);
       setShowMapPicker(false);
       setShowBuildingSuggestions(false);
+
+      // Dispatch event to notify all pages of new post
+      window.dispatchEvent(new Event("itemPosted"));
 
       // Close modal after 1.5 seconds
       setTimeout(() => {

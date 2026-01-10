@@ -55,6 +55,51 @@ export default function Home() {
   const [filterType, setFilterType] = useState<'all' | 'lost' | 'found'>('all');
 
   // Fetch items from backend
+  const fetchItems = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`${API_BASE_URL}/items`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch items");
+      }
+
+      const data = await response.json();
+
+      // Transform backend data to frontend format
+      const transformedItems: FoundItem[] = data.items.map(
+        (item: DBItem) => ({
+          ...item,
+          image:
+            item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : "",
+          what: item.title,
+          where: `Where found: ${item.buildingName}`,
+          location_display: `Location: ${item.buildingName}`,
+          when: `When found: ${new Date(
+            item.createdAt
+          ).toLocaleDateString("en-US")} ${new Date(
+            item.createdAt
+          ).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}`,
+          founder: item.user?.name || "Unknown",
+        })
+      );
+
+      setItems(transformedItems);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "An error occurred";
+      setError(message);
+      console.error("Error fetching items:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch and polling
   useEffect(() => {
     // Get current user
     const user = localStorage.getItem("user");
@@ -63,51 +108,19 @@ export default function Home() {
       setCurrentUserId(parsedUser.id || parsedUser._id);
     }
 
-    const fetchItems = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(`${API_BASE_URL}/items`);
+    // Fetch items on mount
+    fetchItems();
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch items");
-        }
-
-        const data = await response.json();
-
-        // Transform backend data to frontend format
-        const transformedItems: FoundItem[] = data.items.map(
-          (item: DBItem) => ({
-            ...item,
-            image:
-              item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : "",
-            what: item.title,
-            where: `Where found: ${item.buildingName}`,
-            location_display: `Location: ${item.buildingName}`,
-            when: `When found: ${new Date(
-              item.createdAt
-            ).toLocaleDateString("en-US")} ${new Date(
-              item.createdAt
-            ).toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}`,
-            founder: item.user?.name || "Unknown",
-          })
-        );
-
-        setItems(transformedItems);
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "An error occurred";
-        setError(message);
-        console.error("Error fetching items:", err);
-      } finally {
-        setLoading(false);
-      }
+    // Listen for post success event to refetch
+    const handlePostSuccess = () => {
+      fetchItems();
     };
 
-    fetchItems();
+    window.addEventListener("itemPosted", handlePostSuccess);
+
+    return () => {
+      window.removeEventListener("itemPosted", handlePostSuccess);
+    };
   }, []);
 
   // Sync theme with localStorage when component mounts or window gains focus

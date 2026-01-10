@@ -32,7 +32,51 @@ export default function Navbar({
   const [isPostFormOpen, setIsPostFormOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [postLimitReached, setPostLimitReached] = useState<boolean>(false);
   const navigate = useNavigate();
+  // Fetch user's post count for post limit
+  useEffect(() => {
+    const fetchMyPostCount = async () => {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
+      try {
+        const response = await fetch('http://localhost:5000/api/items/my', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPostLimitReached(data.items.length >= 10);
+        }
+      } catch {
+        // Error fetching post count, silently ignore
+      }
+    };
+    fetchMyPostCount();
+  }, [isPostFormOpen]);
+
+  // Listen for itemDeleted event to refresh post count
+  useEffect(() => {
+    const handleItemDeleted = () => {
+      const fetchMyPostCount = async () => {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) return;
+        try {
+          const response = await fetch('http://localhost:5000/api/items/my', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setPostLimitReached(data.items.length >= 10);
+          }
+        } catch {
+          // Error fetching post count, silently ignore
+        }
+      };
+      fetchMyPostCount();
+    };
+    window.addEventListener('itemDeleted', handleItemDeleted);
+    return () => window.removeEventListener('itemDeleted', handleItemDeleted);
+  }, []);
 
   // Calculate total unread notifications
   const unreadCount = Object.keys(unreadNotifications).length;
@@ -135,6 +179,7 @@ export default function Navbar({
             <button 
               className="navbar-post-button"
               onClick={handlePostClick}
+              disabled={postLimitReached}
             >
               + Post
             </button>
