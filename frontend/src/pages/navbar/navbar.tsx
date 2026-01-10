@@ -32,7 +32,6 @@ export default function Navbar({
   const [isPostFormOpen, setIsPostFormOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [myPostCount, setMyPostCount] = useState<number>(0);
   const [postLimitReached, setPostLimitReached] = useState<boolean>(false);
   const navigate = useNavigate();
   // Fetch user's post count for post limit
@@ -46,10 +45,11 @@ export default function Navbar({
         });
         if (response.ok) {
           const data = await response.json();
-          setMyPostCount(data.items.length);
           setPostLimitReached(data.items.length >= 10);
         }
-      } catch (e) {}
+      } catch {
+        // Error fetching post count, silently ignore
+      }
     };
     fetchMyPostCount();
   }, [isPostFormOpen]);
@@ -68,8 +68,8 @@ export default function Navbar({
             const data = await response.json();
             setPostLimitReached(data.items.length >= 10);
           }
-        } catch (_e) {
-          // eslint-disable-next-line no-empty
+        } catch {
+          // Error fetching post count, silently ignore
         }
       };
       fetchMyPostCount();

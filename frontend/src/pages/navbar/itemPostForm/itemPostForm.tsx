@@ -61,8 +61,8 @@ export default function ItemPostForm({
           const data = await response.json();
           setPostLimitReached(data.items.length >= 10);
         }
-      } catch (_e) {
-        // eslint-disable-next-line no-empty
+      } catch {
+        // Error checking post limit, silently ignore
       }
     };
     if (isOpen) checkPostLimit();
