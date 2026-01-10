@@ -288,7 +288,7 @@ router.post("/login", async (req: Request, res: Response) => {
         email: user.email,
       },
       env.JWT_SECRET as string,
-      { expiresIn: "7d" }
+      { expiresIn: "90d" }
     );
 
     logger.info("User logged in", { userId: user.id, email: user.email });

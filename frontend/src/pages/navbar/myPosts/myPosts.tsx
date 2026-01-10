@@ -42,6 +42,7 @@ const BASE_URL = 'http://localhost:5000'
 
 export default function MyItems() {
   const [items, setItems] = useState<UserItem[]>([])
+  const [postLimitReached, setPostLimitReached] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -50,6 +51,15 @@ export default function MyItems() {
 
   useEffect(() => {
     fetchMyItems()
+  }, [])
+
+  // Listen for itemPosted event to refresh items
+  useEffect(() => {
+    const handleItemPosted = () => {
+      fetchMyItems()
+    }
+    window.addEventListener('itemPosted', handleItemPosted)
+    return () => window.removeEventListener('itemPosted', handleItemPosted)
   }, [])
 
   const handleThemeToggle = (isDark: boolean) => {
@@ -102,6 +112,7 @@ export default function MyItems() {
       }))
 
       setItems(transformedItems)
+      setPostLimitReached(transformedItems.length >= 10)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred'
       setError(message)
@@ -137,7 +148,12 @@ export default function MyItems() {
       }
 
       // Remove item from state
-      setItems(items.filter(item => item.id !== itemId))
+      const updatedItems = items.filter(item => item.id !== itemId)
+      setItems(updatedItems)
+      setPostLimitReached(updatedItems.length >= 10)
+
+      // Dispatch event to notify navbar of deletion
+      window.dispatchEvent(new Event('itemDeleted'))
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred'
       setError(message)
@@ -158,6 +174,11 @@ export default function MyItems() {
 
       {/* Main content */}
       <div className="my-items-column">
+        {postLimitReached && (
+          <div style={{ color: 'red', textAlign: 'center', marginBottom: '1rem' }}>
+            You have reached the maximum of 10 posts. Delete an item to add a new one.
+          </div>
+        )}
         <div className="my-items-header">
           <h2>My Posts</h2>
         </div>
@@ -169,7 +190,7 @@ export default function MyItems() {
         ) : items.length === 0 ? (
           <p style={{ textAlign: 'center', padding: '2rem' }}>You haven't posted any items yet</p>
         ) : (
-          items.map((item) => (
+          items.slice(0, 10).map((item) => (
             <div key={item.id} className="my-item-row">
               <div className="my-item-image">
                 {item.image ? (

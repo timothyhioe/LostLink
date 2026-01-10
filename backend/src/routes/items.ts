@@ -88,6 +88,17 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
       longitude,
     } = req.body;
 
+
+    // Anti-spam: Limit to 10 items per user
+    const userItemCount = await db.select({ count: count() })
+      .from(items)
+      .where(eq(items.userId, userId));
+    if ((userItemCount[0]?.count ?? 0) >= 10) {
+      return res.status(429).json({
+        message: "Post limit reached: Each user can only have up to 10 items. Delete an item to add a new one."
+      });
+    }
+
     //validate required fields
     if (!title || !description || !type) {
       return res.status(400).json({
