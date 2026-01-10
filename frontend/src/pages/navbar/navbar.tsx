@@ -66,10 +66,11 @@ export default function Navbar({
           });
           if (response.ok) {
             const data = await response.json();
-            setMyPostCount(data.items.length);
             setPostLimitReached(data.items.length >= 10);
           }
-        } catch (e) {}
+        } catch (_e) {
+          // eslint-disable-next-line no-empty
+        }
       };
       fetchMyPostCount();
     };

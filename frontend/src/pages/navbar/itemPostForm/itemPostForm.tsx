@@ -61,7 +61,9 @@ export default function ItemPostForm({
           const data = await response.json();
           setPostLimitReached(data.items.length >= 10);
         }
-      } catch (e) {}
+      } catch (_e) {
+        // eslint-disable-next-line no-empty
+      }
     };
     if (isOpen) checkPostLimit();
   }, [isOpen]);
