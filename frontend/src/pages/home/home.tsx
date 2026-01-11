@@ -271,18 +271,7 @@ export default function Home() {
                   {item.image ? (
                     <img src={item.image} alt={item.what} />
                   ) : (
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: "#e0e0e0",
-                      }}
-                    >
-                      No Image
-                    </div>
+                    <div className="home-item-no-image"></div>
                   )}
                 </div>
 

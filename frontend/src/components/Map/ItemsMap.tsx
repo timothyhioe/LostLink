@@ -190,7 +190,7 @@ export function ItemsMap({
             ${
               imageUrl
                 ? `<img src="${imageUrl}" alt="${item.title}" class="items-map-popup-single-image" />`
-                : `<div class="items-map-popup-single-no-image">📦</div>`
+                : `<div class="items-map-popup-single-no-image"></div>`
             }
             <div class="items-map-popup-single-content">
               <div class="items-map-popup-single-header">
@@ -254,7 +254,7 @@ export function ItemsMap({
                   ${
                     imageUrl
                       ? `<img src="${imageUrl}" alt="${item.title}" class="items-map-popup-cluster-item-image" />`
-                      : `<div class="items-map-popup-cluster-item-no-image">📦</div>`
+                      : `<div class="items-map-popup-cluster-item-no-image"></div>`
                   }
                   <div class="items-map-popup-cluster-item-content">
                     <div class="items-map-popup-cluster-item-header">

@@ -229,6 +229,21 @@
   object-fit: cover;
 }
 
+.home-item-no-image {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-page.dark-mode .home-item-no-image {
+  border-color: #4b5563;
+}
+
 .home-item-details {
   display: flex;
   flex-direction: column;

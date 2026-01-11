@@ -402,19 +402,17 @@
   width: 64px;
   height: 64px;
   min-width: 64px;
-  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  background: transparent;
+  border: 2px dashed #d1d5db;
   border-radius: 8px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
-  font-size: 28px;
 }
 
 .items-map-popup.dark-mode .items-map-popup-single-no-image {
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
-  color: #6b7280;
+  border-color: #4b5563;
 }
 
 .items-map-popup-single-content {
@@ -603,19 +601,17 @@
 .items-map-popup-cluster-item-no-image {
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  background: transparent;
+  border: 2px dashed #d1d5db;
   border-radius: 6px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
-  font-size: 24px;
 }
 
 .items-map-popup.dark-mode .items-map-popup-cluster-item-no-image {
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
-  color: #6b7280;
+  border-color: #4b5563;
 }
 
 .items-map-popup-cluster-item-content {
