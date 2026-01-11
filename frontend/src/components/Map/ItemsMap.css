@@ -675,15 +675,35 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .mapboxgl-popup-content {
-    max-width: 250px;
+    max-width: 280px !important;
+    width: 280px !important;
+    padding: 0 !important;
+  }
+
+  .items-map-popup-single,
+  .items-map-popup-cluster {
+    min-width: 280px !important;
+    max-width: 280px !important;
+    width: 280px !important;
+  }
+
+  .items-map-popup-single-item,
+  .items-map-popup-cluster-item {
+    padding: 0.625rem;
+  }
+
+  .items-map-popup-cluster-list {
+    max-height: 300px;
+    padding-right: 0px;
+  }
+
+  .items-map-popup-cluster .items-map-popup-content,
+  .items-map-popup-single .items-map-popup-content {
+    padding: 10px;
   }
 
   .items-map-popup-image {
     height: 120px;
-  }
-
-  .items-map-popup-content {
-    padding: 10px;
   }
 
   .items-map-popup-title {
