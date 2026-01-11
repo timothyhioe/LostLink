@@ -4,7 +4,7 @@ import { authenticate } from "../middleware/auth";
 import { storageService } from "../services/storage.service";
 import { logger } from "../utils/logger";
 import { db } from "../config/database";
-import { items, itemImages, itemTags, users } from "../db/schema";
+import { items, itemImages, users } from "../db/schema";
 import { sql, eq, and, desc, count, or, like, inArray } from "drizzle-orm";
 import { minioClient } from "../config/minio";
 import { env } from "../config/env";
@@ -42,9 +42,6 @@ const router = Router();
  *                 type: string
  *                 description: Required for 'found' items, optional for 'lost' items
  *                 example: D14
- *               tags:
- *                 type: string
- *                 description: Comma-separated tags (e.g. "bottle,black,insulated")
  *               image:
  *                 type: string
  *                 format: binary
@@ -83,7 +80,6 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
       description,
       type,
       buildingName,
-      tags,
       latitude,
       longitude,
     } = req.body;
@@ -119,11 +115,6 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
         message: "Location (buildingName) is required for found items",
       });
     }
-
-    // Parse tags (comma-separated string to array)
-    const tagArray = tags
-      ? tags.split(",").map((tag: string) => tag.trim().toLowerCase())
-      : [];
 
     // Handle image upload first (before transaction)
     let uploadResult = null;
@@ -178,7 +169,7 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
       });
     }
 
-    // Use transaction for item, image, and tags
+    // Use transaction for item and image
     const result = await db.transaction(async (tx) => {
       // Build coordinates SQL via drizzle and postGIS
       let coordinatesSql;
@@ -217,16 +208,6 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
         });
       }
 
-      // Insert tags
-      if (tagArray.length > 0) {
-        await tx.insert(itemTags).values(
-          tagArray.map((tag: string) => ({
-            itemId: item.id,
-            tag,
-          }))
-        );
-      }
-
       return item;
     });
 
@@ -243,7 +224,6 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
         buildingName: result.buildingName,
         status: result.status,
         matchCount: result.matchCount,
-        tags: tagArray,
         images: uploadResult
           ? [
               {
@@ -387,19 +367,8 @@ router.get("/", async (req, res, next) => {
 
     const total = countResult?.total || 0;
 
-    // Get all tags and images for items in one query each (eliminate N+1)
+    // Get all images for items in one query (eliminate N+1)
     const itemIds = itemsResult.map((item) => item.id);
-
-    const allTags =
-      itemIds.length > 0
-        ? await db
-            .select({
-              itemId: itemTags.itemId,
-              tag: itemTags.tag,
-            })
-            .from(itemTags)
-            .where(inArray(itemTags.itemId, itemIds))
-        : [];
 
     const allImages =
       itemIds.length > 0
@@ -414,15 +383,8 @@ router.get("/", async (req, res, next) => {
             .where(inArray(itemImages.itemId, itemIds))
         : [];
 
-    // Group tags and images by itemId
-    const tagsByItem = new Map<string, string[]>();
+    // Group images by itemId
     const imagesByItem = new Map<string, typeof allImages>();
-
-    for (const tag of allTags) {
-      const existing = tagsByItem.get(tag.itemId) || [];
-      existing.push(tag.tag);
-      tagsByItem.set(tag.itemId, existing);
-    }
 
     for (const image of allImages) {
       const existing = imagesByItem.get(image.itemId) || [];
@@ -430,7 +392,7 @@ router.get("/", async (req, res, next) => {
       imagesByItem.set(image.itemId, existing);
     }
 
-    // Map results with tags and images
+    // Map results with images
     const mappedItems = itemsResult.map((item) => ({
       id: item.id,
       userId: item.userId,
@@ -440,7 +402,6 @@ router.get("/", async (req, res, next) => {
       buildingName: item.buildingName,
       status: item.status,
       matchCount: item.matchCount,
-      tags: tagsByItem.get(item.id) || [],
       images: imagesByItem.get(item.id) || [],
       coordinates: {
         longitude: item.longitude,
@@ -506,19 +467,8 @@ router.get("/my", authenticate, async (req, res, next) => {
       .where(eq(items.userId, userId))
       .orderBy(desc(items.createdAt));
 
-    // Get all tags and images for items in one query each (eliminate N+1)
+    // Get all images for items in one query (eliminate N+1)
     const itemIds = itemsResult.map((item) => item.id);
-
-    const allTags =
-      itemIds.length > 0
-        ? await db
-            .select({
-              itemId: itemTags.itemId,
-              tag: itemTags.tag,
-            })
-            .from(itemTags)
-            .where(inArray(itemTags.itemId, itemIds))
-        : [];
 
     const allImages =
       itemIds.length > 0
@@ -533,15 +483,8 @@ router.get("/my", authenticate, async (req, res, next) => {
             .where(inArray(itemImages.itemId, itemIds))
         : [];
 
-    // Group tags and images by itemId
-    const tagsByItem = new Map<string, string[]>();
+    // Group images by itemId
     const imagesByItem = new Map<string, typeof allImages>();
-
-    for (const tag of allTags) {
-      const existing = tagsByItem.get(tag.itemId) || [];
-      existing.push(tag.tag);
-      tagsByItem.set(tag.itemId, existing);
-    }
 
     for (const image of allImages) {
       const existing = imagesByItem.get(image.itemId) || [];
@@ -549,7 +492,7 @@ router.get("/my", authenticate, async (req, res, next) => {
       imagesByItem.set(image.itemId, existing);
     }
 
-    // Map results with tags and images
+    // Map results with images
     const mappedItems = itemsResult.map((item) => ({
       id: item.id,
       userId: item.userId,
@@ -559,7 +502,6 @@ router.get("/my", authenticate, async (req, res, next) => {
       buildingName: item.buildingName,
       status: item.status,
       matchCount: item.matchCount,
-      tags: tagsByItem.get(item.id) || [],
       images: imagesByItem.get(item.id) || [],
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
@@ -723,12 +665,7 @@ router.get("/:id", async (req, res, next) => {
       return res.status(404).json({ message: "Item not found" });
     }
 
-    // Get tags and images
-    const tagsResult = await db
-      .select({ tag: itemTags.tag })
-      .from(itemTags)
-      .where(eq(itemTags.itemId, id as string));
-
+    // Get images
     const imagesResult = await db
       .select({
         url: itemImages.url,
@@ -748,7 +685,6 @@ router.get("/:id", async (req, res, next) => {
         buildingName: item.buildingName,
         status: item.status,
         matchCount: item.matchCount,
-        tags: tagsResult.map((r) => r.tag),
         images: imagesResult,
         coordinates: {
           longitude: item.longitude,
@@ -794,8 +730,6 @@ router.get("/:id", async (req, res, next) => {
  *               description:
  *                 type: string
  *               buildingName:
- *                 type: string
- *               tags:
  *                 type: string
  *               status:
  *                 type: string
@@ -851,7 +785,6 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
       title,
       description,
       buildingName,
-      tags,
       status,
       longitude,
       latitude,
@@ -964,26 +897,6 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
         });
       }
 
-      // Update tags if provided
-      if (tags) {
-        // Delete old tags
-        await tx.delete(itemTags).where(eq(itemTags.itemId, id as string));
-
-        // Insert new tags
-        const tagArray = tags
-          .split(",")
-          .map((tag: string) => tag.trim().toLowerCase());
-
-        if (tagArray.length > 0) {
-          await tx.insert(itemTags).values(
-            tagArray.map((tag: string) => ({
-              itemId: id as string,
-              tag,
-            }))
-          );
-        }
-      }
-
       // Fetch updated item
       const [updated] = await tx
         .select()
@@ -998,12 +911,7 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
       return res.status(500).json({ message: "Failed to update item" });
     }
 
-    // Get tags and images for response
-    const tagsResult = await db
-      .select({ tag: itemTags.tag })
-      .from(itemTags)
-      .where(eq(itemTags.itemId, id as string));
-
+    // Get images for response
     const imagesResult = await db
       .select({
         url: itemImages.url,
@@ -1024,7 +932,6 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
         buildingName: updatedItem.buildingName,
         status: updatedItem.status,
         matchCount: updatedItem.matchCount,
-        tags: tagsResult.map((r) => r.tag),
         images: imagesResult,
         createdAt: updatedItem.createdAt,
         updatedAt: updatedItem.updatedAt,
@@ -1126,7 +1033,7 @@ router.delete("/:id", authenticate, async (req, res, next) => {
       }
     }
 
-    // Delete item (cascade will delete tags and images)
+    // Delete item (cascade will delete images)
     await db.delete(items).where(eq(items.id, id as string));
 
     logger.info("Item deleted", { itemId: id, userId });

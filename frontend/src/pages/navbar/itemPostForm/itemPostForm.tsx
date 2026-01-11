@@ -29,7 +29,6 @@ export default function ItemPostForm({
     title: "",
     description: "",
     buildingName: "",
-    tags: "",
     latitude: "",
     longitude: "",
   });
@@ -189,7 +188,6 @@ export default function ItemPostForm({
       formDataToSend.append("title", formData.title);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("buildingName", formData.buildingName || "");
-      formDataToSend.append("tags", formData.tags);
 
       // Add coordinates if provided (from map picker)
       if (formData.latitude && formData.longitude) {
@@ -217,7 +215,6 @@ export default function ItemPostForm({
         title: "",
         description: "",
         buildingName: "",
-        tags: "",
         latitude: "",
         longitude: "",
       });
@@ -415,20 +412,6 @@ export default function ItemPostForm({
               </button>
             </div>
           )}
-
-          {/* Tags */}
-          <div className="item-post-form-group">
-            <label htmlFor="tags">Tags (comma-separated)</label>
-            <input
-              id="tags"
-              type="text"
-              name="tags"
-              placeholder="e.g., bottle, black, metal"
-              value={formData.tags}
-              onChange={handleInputChange}
-              className="item-post-form-input"
-            />
-          </div>
 
           {/* Submit button */}
           <div className="item-post-form-buttons">

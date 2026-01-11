@@ -17,7 +17,6 @@ interface DBItem {
   description: string
   buildingName: string
   images: ItemImage[]
-  tags: string[]
   status: string
   matchCount: number
   user?: {
