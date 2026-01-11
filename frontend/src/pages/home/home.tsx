@@ -52,6 +52,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'lost' | 'found'>('all');
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
 
   // Fetch items from backend
   const fetchItems = async () => {
@@ -157,6 +158,33 @@ export default function Home() {
     };
   }, [isDarkMode]);
 
+  // Handle scrolling to item from URL hash
+  useEffect(() => {
+    // Check if URL has item hash
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#item-')) {
+      const itemId = hash.replace('#item-', '');
+      
+      // Wait for items to load
+      if (items.length > 0 && !loading) {
+        setTimeout(() => {
+          const element = document.querySelector(`[data-item-id="${itemId}"]`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Highlight the item
+            setHighlightedItemId(itemId);
+            // Remove highlight after 2 seconds
+            setTimeout(() => {
+              setHighlightedItemId(null);
+            }, 2000);
+            // Clear the hash from URL
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        }, 300);
+      }
+    }
+  }, [items, loading]);
+
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
@@ -234,7 +262,11 @@ export default function Home() {
             items
               .filter(item => filterType === 'all' || item.type === filterType)
               .map((item) => (
-              <div key={item.id} className="home-item-row">
+              <div 
+                key={item.id} 
+                className={`home-item-row ${highlightedItemId === item.id ? 'highlight-item' : ''}`}
+                data-item-id={item.id}
+              >
                 <div className="home-item-image">
                   {item.image ? (
                     <img src={item.image} alt={item.what} />

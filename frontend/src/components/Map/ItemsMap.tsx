@@ -186,7 +186,7 @@ export function ItemsMap({
               ? `<h3 class="items-map-popup-building">${item.buildingName}</h3>`
               : ""
           }
-          <div class="items-map-popup-single-item">
+          <div class="items-map-popup-single-item" data-item-id="${item.id}">
             ${
               imageUrl
                 ? `<img src="${imageUrl}" alt="${item.title}" class="items-map-popup-single-image" />`
@@ -250,7 +250,7 @@ export function ItemsMap({
                 });
 
                 return `
-                <div class="items-map-popup-cluster-item">
+                <div class="items-map-popup-cluster-item" data-item-id="${item.id}">
                   ${
                     imageUrl
                       ? `<img src="${imageUrl}" alt="${item.title}" class="items-map-popup-cluster-item-image" />`
@@ -567,6 +567,31 @@ export function ItemsMap({
       updateMarkers();
     }
   }, [items, loading, updateMarkers]);
+
+  // Add click handler for popup items to navigate to home page
+  useEffect(() => {
+    if (!map.current) return;
+
+    const handleItemClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const itemCard = target.closest("[data-item-id]");
+      if (itemCard) {
+        const itemId = itemCard.getAttribute("data-item-id");
+        if (itemId) {
+          // Navigate to home page with item hash
+          window.location.href = `/#item-${itemId}`;
+        }
+      }
+    };
+
+    // Add click listener to map container
+    const mapContainer = map.current.getContainer();
+    mapContainer.addEventListener("click", handleItemClick);
+
+    return () => {
+      mapContainer.removeEventListener("click", handleItemClick);
+    };
+  }, []);
 
   return (
     <div className={`items-map-container ${className || ""}`} style={style}>
