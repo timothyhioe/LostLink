@@ -414,6 +414,109 @@
   color: #ffd700;
 }
 
+/* Image upload section */
+.item-post-form-image-section {
+  width: 100%;
+}
+
+.item-post-form-image-upload {
+  position: relative;
+  width: 100%;
+}
+
+.item-post-form-file-input {
+  display: none;
+}
+
+.item-post-form-file-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  border: 2px dashed var(--color-primary);
+  border-radius: 6px;
+  background-color: rgba(173, 139, 115, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  gap: 0.5rem;
+}
+
+.item-post-form-overlay.dark-mode .item-post-form-file-label {
+  background-color: rgba(173, 139, 115, 0.1);
+}
+
+.item-post-form-file-label:hover {
+  border-color: var(--color-secondary);
+  background-color: rgba(250, 205, 0, 0.1);
+}
+
+.item-post-form-upload-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--color-primary);
+}
+
+.item-post-form-file-label span:first-of-type {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.item-post-form-overlay.dark-mode .item-post-form-file-label span:first-of-type {
+  color: var(--color-secondary);
+}
+
+.item-post-form-file-hint {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.item-post-form-overlay.dark-mode .item-post-form-file-hint {
+  color: #999;
+}
+
+/* Image preview */
+.item-post-form-image-preview-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.item-post-form-image-preview {
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 2px solid var(--color-primary);
+}
+
+.item-post-form-remove-image {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(244, 67, 54, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  line-height: 1;
+}
+
+.item-post-form-remove-image:hover {
+  background-color: #d32f2f;
+  transform: scale(1.1);
+}
+
 /* Tablet responsive */
 @media (max-width: 768px) and (orientation: portrait) {
   .item-post-form-container {
@@ -422,5 +525,42 @@
 
   .item-post-form-map-picker-wrapper {
     height: 300px;
+  }
+
+  .item-post-form-image-preview {
+    max-height: 250px;
+  }
+
+  .item-post-form-file-label {
+    padding: 1.5rem 1rem;
+  }
+
+  .item-post-form-upload-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Mobile responsive for image upload */
+@media (max-width: 480px) {
+  .item-post-form-image-preview {
+    max-height: 200px;
+  }
+
+  .item-post-form-file-label {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .item-post-form-upload-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .item-post-form-file-label span:first-of-type {
+    font-size: 0.9rem;
+  }
+
+  .item-post-form-file-hint {
+    font-size: 0.8rem;
   }
 }
