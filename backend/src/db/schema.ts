@@ -112,22 +112,6 @@ export const itemImages = pgTable(
   })
 );
 
-// Item Tags Table
-export const itemTags = pgTable(
-  "item_tags",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    itemId: uuid("item_id")
-      .notNull()
-      .references(() => items.id, { onDelete: "cascade" }),
-    tag: varchar("tag", { length: 100 }).notNull(),
-  },
-  (table) => ({
-    itemIdIdx: index("idx_item_tags_item_id").on(table.itemId),
-    tagIdx: index("idx_item_tags_tag").on(table.tag),
-  })
-);
-
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   items: many(items),
@@ -139,19 +123,11 @@ export const itemsRelations = relations(items, ({ one, many }) => ({
     references: [users.id],
   }),
   images: many(itemImages),
-  tags: many(itemTags),
 }));
 
 export const itemImagesRelations = relations(itemImages, ({ one }) => ({
   item: one(items, {
     fields: [itemImages.itemId],
-    references: [items.id],
-  }),
-}));
-
-export const itemTagsRelations = relations(itemTags, ({ one }) => ({
-  item: one(items, {
-    fields: [itemTags.itemId],
     references: [items.id],
   }),
 }));
@@ -163,6 +139,4 @@ export type Item = typeof items.$inferSelect;
 export type NewItem = typeof items.$inferInsert;
 export type ItemImage = typeof itemImages.$inferSelect;
 export type NewItemImage = typeof itemImages.$inferInsert;
-export type ItemTag = typeof itemTags.$inferSelect;
-export type NewItemTag = typeof itemTags.$inferInsert;
 export * from './schema/chat'

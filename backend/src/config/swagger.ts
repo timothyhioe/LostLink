@@ -120,11 +120,6 @@ const options: swaggerJsdoc.Options = {
                 },
               },
             },
-            tags: {
-              type: "array",
-              items: { type: "string" },
-              description: "Item tags",
-            },
             status: {
               type: "string",
               enum: ["open", "matched", "resolved", "closed"],

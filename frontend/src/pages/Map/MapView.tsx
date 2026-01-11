@@ -19,7 +19,6 @@ interface MapItem {
   description: string;
   buildingName: string | null;
   images: ItemImage[];
-  tags: string[];
   status: string;
   matchCount: number;
   user?: {

@@ -60,17 +60,6 @@ CREATE TABLE item_images (
 -- Indexes on item_images table
 CREATE INDEX idx_item_images_item_id ON item_images(item_id);
 
--- Item Tags Table
-CREATE TABLE item_tags (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  item_id UUID NOT NULL REFERENCES items(id) ON DELETE CASCADE,
-  tag VARCHAR(100) NOT NULL
-);
-
--- Indexes on item_tags table
-CREATE INDEX idx_item_tags_item_id ON item_tags(item_id);
-CREATE INDEX idx_item_tags_tag ON item_tags(tag);
-
 -- Chat messages table
 CREATE TABLE chat_messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
