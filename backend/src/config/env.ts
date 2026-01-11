@@ -23,6 +23,15 @@ const envSchema = z.object({
   MINIO_ACCESS_KEY: z.string().default('minioadmin'),
   MINIO_SECRET_KEY: z.string().default('minioadmin'),
   MINIO_BUCKET: z.string().default('lostlink-items'),
+  SMTP_HOST: z.string().default(''),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_SECURE: z
+    .union([z.string(), z.boolean()])
+    .default('false')
+    .transform((value) => value === true || value === 'true'),
+  SMTP_USER: z.string().default(''),
+  SMTP_PASS: z.string().default(''),
+  SMTP_FROM: z.string().default(''),
 });
 
 export type Env = z.infer<typeof envSchema>;
