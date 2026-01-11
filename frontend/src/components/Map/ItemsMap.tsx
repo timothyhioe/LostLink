@@ -130,26 +130,39 @@ export function ItemsMap({
   }, [apiBaseUrl, providedItems, typeFilter, statusFilter]);
 
   // Create custom marker element
-  const createMarkerElement = (type: "lost" | "found") => {
+  const createMarkerElement = (type: "lost" | "found", count?: number) => {
     const markerElement = document.createElement("div");
-    markerElement.className = `items-map-marker items-map-marker-${type}`;
 
-    const color = type === "lost" ? "#ef4444" : "#3b82f6"; // Red for lost, blue for found
+    // Cluster marker if count > 1
+    if (count && count > 1) {
+      markerElement.className = `items-map-marker items-map-marker-cluster items-map-marker-cluster-${type}`;
+      const color = type === "lost" ? "#ef4444" : "#3b82f6";
 
-    markerElement.innerHTML = `
-      <div class="items-map-marker-pin">
-        <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 0C7.163 0 0 7.163 0 16c0 13 16 26 16 26s16-13 16-26c0-8.837-7.163-16-16-16z" fill="${color}"/>
-          <circle cx="16" cy="16" r="5" fill="white"/>
-        </svg>
-      </div>
-    `;
+      markerElement.innerHTML = `
+        <div class="items-map-marker-cluster-circle" style="background-color: ${color}">
+          <span class="items-map-marker-cluster-count">${count}</span>
+        </div>
+      `;
+    } else {
+      // Single item marker
+      markerElement.className = `items-map-marker items-map-marker-${type}`;
+      const color = type === "lost" ? "#ef4444" : "#3b82f6";
+
+      markerElement.innerHTML = `
+        <div class="items-map-marker-pin">
+          <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0C7.163 0 0 7.163 0 16c0 13 16 26 16 26s16-13 16-26c0-8.837-7.163-16-16-16z" fill="${color}"/>
+            <circle cx="16" cy="16" r="5" fill="white"/>
+          </svg>
+        </div>
+      `;
+    }
 
     return markerElement;
   };
 
-  // Create popup content
-  const createPopupContent = useCallback(
+  // Create popup content for a single item
+  const createSingleItemPopup = useCallback(
     (item: MapItem) => {
       const imageUrl =
         item.images && item.images.length > 0
@@ -158,43 +171,114 @@ export function ItemsMap({
       const formattedDate = new Date(item.createdAt).toLocaleDateString(
         "de-DE",
         {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
+          day: "2-digit",
+          month: "short",
         }
       );
 
       return `
-      <div class="items-map-popup ${isDarkMode ? "dark-mode" : ""}">
-        ${
-          imageUrl
-            ? `<img src="${imageUrl}" alt="${item.title}" class="items-map-popup-image" />`
-            : ""
-        }
+      <div class="items-map-popup items-map-popup-single ${
+        isDarkMode ? "dark-mode" : ""
+      }">
         <div class="items-map-popup-content">
-          <div class="items-map-popup-header">
-            <span class="items-map-popup-type items-map-popup-type-${
-              item.type
-            }">
-              ${item.type === "lost" ? "Verloren" : "Gefunden"}
-            </span>
-            <span class="items-map-popup-status">${item.status}</span>
-          </div>
-          <h3 class="items-map-popup-title">${item.title}</h3>
-          <p class="items-map-popup-description">${
-            item.description || "Keine Beschreibung"
-          }</p>
           ${
             item.buildingName
-              ? `<p class="items-map-popup-location">📍 ${item.buildingName}</p>`
+              ? `<h3 class="items-map-popup-building">${item.buildingName}</h3>`
               : ""
           }
-          <p class="items-map-popup-date">📅 ${formattedDate}</p>
-          ${
-            item.user?.name
-              ? `<p class="items-map-popup-user">👤 ${item.user.name}</p>`
-              : ""
-          }
+          <div class="items-map-popup-single-item" data-item-id="${item.id}">
+            ${
+              imageUrl
+                ? `<img src="${imageUrl}" alt="${item.title}" class="items-map-popup-single-image" />`
+                : `<div class="items-map-popup-single-no-image"></div>`
+            }
+            <div class="items-map-popup-single-content">
+              <div class="items-map-popup-single-header">
+                <span class="items-map-popup-type items-map-popup-type-${
+                  item.type
+                }">
+                  ${item.type === "lost" ? "Verloren" : "Gefunden"}
+                </span>
+                <span class="items-map-popup-single-date">${formattedDate}</span>
+              </div>
+              <h4 class="items-map-popup-single-title">${item.title}</h4>
+              ${
+                item.user?.name
+                  ? `<p class="items-map-popup-single-user">👤 ${item.user.name}</p>`
+                  : ""
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    },
+    [isDarkMode]
+  );
+
+  // Create popup content for clustered items
+  const createClusterPopup = useCallback(
+    (items: MapItem[], buildingName: string) => {
+      const lostItems = items.filter((item) => item.type === "lost");
+      const foundItems = items.filter((item) => item.type === "found");
+
+      return `
+      <div class="items-map-popup items-map-popup-cluster ${
+        isDarkMode ? "dark-mode" : ""
+      }">
+        <div class="items-map-popup-content">
+          <h3 class="items-map-popup-title">${buildingName}</h3>
+          <p class="items-map-popup-cluster-summary">
+            ${items.length} ${items.length === 1 ? "Item" : "Items"}${
+        foundItems.length > 0 || lostItems.length > 0 ? " • " : ""
+      }${foundItems.length > 0 ? `${foundItems.length} gefunden` : ""}${
+        lostItems.length > 0 && foundItems.length > 0 ? " • " : ""
+      }${lostItems.length > 0 ? `${lostItems.length} verloren` : ""}
+          </p>
+          <div class="items-map-popup-cluster-list">
+            ${items
+              .map((item) => {
+                const imageUrl =
+                  item.images && item.images.length > 0
+                    ? `http://localhost:5000${item.images[0].url}`
+                    : null;
+                const formattedDate = new Date(
+                  item.createdAt
+                ).toLocaleDateString("de-DE", {
+                  day: "2-digit",
+                  month: "short",
+                });
+
+                return `
+                <div class="items-map-popup-cluster-item" data-item-id="${item.id}">
+                  ${
+                    imageUrl
+                      ? `<img src="${imageUrl}" alt="${item.title}" class="items-map-popup-cluster-item-image" />`
+                      : `<div class="items-map-popup-cluster-item-no-image"></div>`
+                  }
+                  <div class="items-map-popup-cluster-item-content">
+                    <div class="items-map-popup-cluster-item-header">
+                      <span class="items-map-popup-type items-map-popup-type-${
+                        item.type
+                      }">
+                        ${item.type === "lost" ? "Verloren" : "Gefunden"}
+                      </span>
+                      <span class="items-map-popup-cluster-item-date">${formattedDate}</span>
+                    </div>
+                    <h4 class="items-map-popup-cluster-item-title">${
+                      item.title
+                    }</h4>
+                    ${
+                      item.user?.name
+                        ? `<p class="items-map-popup-cluster-item-user">👤 ${item.user.name}</p>`
+                        : ""
+                    }
+                  </div>
+                </div>
+              `;
+              })
+              .join("")}
+          </div>
         </div>
       </div>
     `;
@@ -341,64 +425,114 @@ export function ItemsMap({
 
     if (validItems.length === 0) {
       console.warn("ItemsMap: No items with valid coordinates found");
+      isUpdatingMarkers.current = false;
       return;
     }
 
-    // Create markers for each item
+    // Group items by building or very close coordinates
+    const DISTANCE_THRESHOLD = 0.0001; // ~10 meters
+    const clusters = new Map<string, MapItem[]>();
+
     validItems.forEach((item) => {
       const lng = item.longitude ?? item.coordinates?.longitude ?? 0;
       const lat = item.latitude ?? item.coordinates?.latitude ?? 0;
 
-      console.log(
-        "ItemsMap: Creating marker for item",
-        item.id,
-        "at",
-        lng,
-        lat
-      );
+      // Try to find an existing cluster with the same building or very close location
+      let foundCluster = false;
 
-      const markerElement = createMarkerElement(item.type);
+      for (const [, clusterItems] of clusters.entries()) {
+        const firstItem = clusterItems[0];
+        const clusterLng =
+          firstItem.longitude ?? firstItem.coordinates?.longitude ?? 0;
+        const clusterLat =
+          firstItem.latitude ?? firstItem.coordinates?.latitude ?? 0;
+
+        // Check if same building name or very close coordinates
+        const sameBuilding =
+          item.buildingName &&
+          firstItem.buildingName &&
+          item.buildingName === firstItem.buildingName;
+        const closeCoordinates =
+          Math.abs(lng - clusterLng) < DISTANCE_THRESHOLD &&
+          Math.abs(lat - clusterLat) < DISTANCE_THRESHOLD;
+
+        if (sameBuilding || closeCoordinates) {
+          clusterItems.push(item);
+          foundCluster = true;
+          break;
+        }
+      }
+
+      if (!foundCluster) {
+        // Create new cluster
+        const clusterKey = `${lng.toFixed(4)},${lat.toFixed(4)}`;
+        clusters.set(clusterKey, [item]);
+      }
+    });
+
+    console.log("ItemsMap: Created", clusters.size, "clusters");
+
+    // Create markers for each cluster
+    const allBounds: [number, number][] = [];
+
+    clusters.forEach((clusterItems) => {
+      const firstItem = clusterItems[0];
+      const lng = firstItem.longitude ?? firstItem.coordinates?.longitude ?? 0;
+      const lat = firstItem.latitude ?? firstItem.coordinates?.latitude ?? 0;
+
+      allBounds.push([lng, lat]);
+
+      // Determine cluster type (if all same type, use that; otherwise use "found" as default)
+      const allLost = clusterItems.every((item) => item.type === "lost");
+      const clusterType = allLost ? "lost" : "found";
+
+      const markerElement = createMarkerElement(
+        clusterType,
+        clusterItems.length
+      );
       const marker = new mapboxgl.Marker({
         element: markerElement,
-        anchor: "bottom",
+        anchor: clusterItems.length > 1 ? "center" : "bottom",
       })
         .setLngLat([lng, lat])
         .addTo(map.current!);
 
-      console.log("ItemsMap: Marker created and added to map", marker);
-
-      // Create popup
-      const popup = new mapboxgl.Popup({
-        offset: 25,
-        closeButton: false,
-        closeOnClick: false,
-      }).setHTML(createPopupContent(item));
+      // Create popup based on cluster size
+      let popup;
+      if (clusterItems.length === 1) {
+        popup = new mapboxgl.Popup({
+          offset: 25,
+          closeButton: false,
+          closeOnClick: false,
+          maxWidth: "320px",
+        }).setHTML(createSingleItemPopup(clusterItems[0]));
+      } else {
+        const buildingName =
+          clusterItems[0].buildingName || "Unbekannter Standort";
+        popup = new mapboxgl.Popup({
+          offset: 15,
+          closeButton: false,
+          closeOnClick: false,
+          maxWidth: "400px",
+        }).setHTML(createClusterPopup(clusterItems, buildingName));
+      }
 
       // Set popup on marker
       marker.setPopup(popup);
-
       markers.current.push(marker);
     });
 
-    // Fit map to show all markers if there are multiple items
-    if (validItems.length > 1) {
+    // Fit map to show all markers
+    if (allBounds.length > 1) {
       const bounds = new mapboxgl.LngLatBounds();
-      validItems.forEach((item) => {
-        const lng = item.longitude ?? item.coordinates?.longitude ?? 0;
-        const lat = item.latitude ?? item.coordinates?.latitude ?? 0;
-        bounds.extend([lng, lat]);
-      });
+      allBounds.forEach((coord) => bounds.extend(coord));
       map.current.fitBounds(bounds, {
         padding: { top: 50, bottom: 50, left: 50, right: 50 },
         maxZoom: 18,
       });
-    } else if (validItems.length === 1) {
-      // Center on single item
-      const lng =
-        validItems[0].longitude ?? validItems[0].coordinates?.longitude ?? 0;
-      const lat =
-        validItems[0].latitude ?? validItems[0].coordinates?.latitude ?? 0;
-      map.current.setCenter([lng, lat]);
+    } else if (allBounds.length === 1) {
+      // Center on single marker
+      map.current.setCenter(allBounds[0]);
       map.current.setZoom(17);
     }
 
@@ -407,7 +541,7 @@ export function ItemsMap({
       "ItemsMap: Finished marker update, total markers:",
       markers.current.length
     );
-  }, [items, createPopupContent]);
+  }, [items, createSingleItemPopup, createClusterPopup]);
 
   // Update markers when items change or map loads
   useEffect(() => {
@@ -433,6 +567,31 @@ export function ItemsMap({
       updateMarkers();
     }
   }, [items, loading, updateMarkers]);
+
+  // Add click handler for popup items to navigate to home page
+  useEffect(() => {
+    if (!map.current) return;
+
+    const handleItemClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const itemCard = target.closest("[data-item-id]");
+      if (itemCard) {
+        const itemId = itemCard.getAttribute("data-item-id");
+        if (itemId) {
+          // Navigate to home page with item hash
+          window.location.href = `/#item-${itemId}`;
+        }
+      }
+    };
+
+    // Add click listener to map container
+    const mapContainer = map.current.getContainer();
+    mapContainer.addEventListener("click", handleItemClick);
+
+    return () => {
+      mapContainer.removeEventListener("click", handleItemClick);
+    };
+  }, []);
 
   return (
     <div className={`items-map-container ${className || ""}`} style={style}>
