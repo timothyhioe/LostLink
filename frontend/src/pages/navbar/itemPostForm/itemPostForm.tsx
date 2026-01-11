@@ -46,6 +46,8 @@ export default function ItemPostForm({
     lat: number;
     lng: number;
   } | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Check post limit on open
   useEffect(() => {
@@ -149,6 +151,35 @@ export default function ItemPostForm({
     setShowBuildingSuggestions(false);
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        setError("Please select a valid image file");
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image size must be less than 5MB");
+        return;
+      }
+      setSelectedImage(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError(null);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -195,6 +226,11 @@ export default function ItemPostForm({
         formDataToSend.append("longitude", formData.longitude);
       }
 
+      // Add image if selected
+      if (selectedImage) {
+        formDataToSend.append("image", selectedImage);
+      }
+
       // Send to backend
       const response = await fetch(`${API_BASE_URL}/items`, {
         method: "POST",
@@ -221,6 +257,8 @@ export default function ItemPostForm({
       setSelectedCoordinates(null);
       setShowMapPicker(false);
       setShowBuildingSuggestions(false);
+      setSelectedImage(null);
+      setImagePreview(null);
 
       // Dispatch event to notify all pages of new post
       window.dispatchEvent(new Event("itemPosted"));
@@ -314,6 +352,63 @@ export default function ItemPostForm({
               rows={4}
               required
             />
+          </div>
+
+          {/* Image Upload */}
+          <div className="item-post-form-group">
+            <label htmlFor="image">Item Image</label>
+            <div className="item-post-form-image-section">
+              {!imagePreview ? (
+                <div className="item-post-form-image-upload">
+                  <input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="item-post-form-file-input"
+                  />
+                  <label
+                    htmlFor="image"
+                    className="item-post-form-file-label"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="item-post-form-upload-icon"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <span>Click to upload image</span>
+                    <span className="item-post-form-file-hint">
+                      Max 5MB, JPG/PNG/GIF
+                    </span>
+                  </label>
+                </div>
+              ) : (
+                <div className="item-post-form-image-preview-wrapper">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="item-post-form-image-preview"
+                  />
+                  <button
+                    type="button"
+                    className="item-post-form-remove-image"
+                    onClick={handleRemoveImage}
+                    title="Remove image"
+                  >
+                    &times;
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Building Name with Autocomplete */}
