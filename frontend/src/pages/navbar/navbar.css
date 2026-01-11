@@ -479,14 +479,15 @@
   border-radius: 8px;
   padding: 0.5rem 0;
   min-width: 150px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 1001;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
   animation: fadeIn 0.2s ease-in-out;
 }
 
 .navbar-profile-dropdown.dark-mode {
   background-color: var(--color-background-dark);
   border-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .dropdown-item {
@@ -507,7 +508,7 @@
 }
 
 .navbar-profile-dropdown.dark-mode .dropdown-item {
-  color: var(--color-text-dark);
+  color: #f3f4f6;
 }
 
 .navbar-profile-dropdown.dark-mode .dropdown-item:hover {
