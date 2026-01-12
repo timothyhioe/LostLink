@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import "./home.css";
 import Navbar from "../navbar/navbar";
 import { useChat } from "../../contexts/ChatContext";
@@ -51,8 +51,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'lost' | 'found'>('all');
-  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<"all" | "lost" | "found">("all");
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(
+    null
+  );
 
   // Fetch items from backend
   const fetchItems = async () => {
@@ -68,30 +70,33 @@ export default function Home() {
       const data = await response.json();
 
       // Transform backend data to frontend format
-      const transformedItems: FoundItem[] = data.items.map(
-        (item: DBItem) => ({
+      const transformedItems: FoundItem[] = data.items.map((item: DBItem) => {
+        // Only prepend BASE_URL if the image URL is not already absolute
+        const imageUrl = item.images.length > 0 ? item.images[0].url : "";
+        const fullImageUrl =
+          imageUrl.startsWith("http://") || imageUrl.startsWith("https://")
+            ? imageUrl
+            : `${BASE_URL}${imageUrl}`;
+
+        return {
           ...item,
-          image:
-            item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : "",
+          image: fullImageUrl,
           what: item.title,
           where: `Where found: ${item.buildingName}`,
           location_display: `Location: ${item.buildingName}`,
-          when: `When found: ${new Date(
-            item.createdAt
-          ).toLocaleDateString("en-US")} ${new Date(
-            item.createdAt
-          ).toLocaleTimeString("en-US", {
+          when: `When found: ${new Date(item.createdAt).toLocaleDateString(
+            "en-US"
+          )} ${new Date(item.createdAt).toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
           })}`,
           founder: item.user?.name || "Unknown",
-        })
-      );
+        };
+      });
 
       setItems(transformedItems);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "An error occurred";
+      const message = err instanceof Error ? err.message : "An error occurred";
       setError(message);
       console.error("Error fetching items:", err);
     } finally {
@@ -162,15 +167,15 @@ export default function Home() {
   useEffect(() => {
     // Check if URL has item hash
     const hash = window.location.hash;
-    if (hash && hash.startsWith('#item-')) {
-      const itemId = hash.replace('#item-', '');
-      
+    if (hash && hash.startsWith("#item-")) {
+      const itemId = hash.replace("#item-", "");
+
       // Wait for items to load
       if (items.length > 0 && !loading) {
         setTimeout(() => {
           const element = document.querySelector(`[data-item-id="${itemId}"]`);
           if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
             // Highlight the item
             setHighlightedItemId(itemId);
             // Remove highlight after 2 seconds
@@ -178,7 +183,7 @@ export default function Home() {
               setHighlightedItemId(null);
             }, 2000);
             // Clear the hash from URL
-            window.history.replaceState(null, '', window.location.pathname);
+            window.history.replaceState(null, "", window.location.pathname);
           }
         }, 300);
       }
@@ -226,21 +231,27 @@ export default function Home() {
         <div className="home-items-column">
           {/* Filter buttons */}
           <div className="home-filters">
-            <button 
-              className={`home-filter-btn ${filterType === 'all' ? 'active' : ''}`}
-              onClick={() => setFilterType('all')}
+            <button
+              className={`home-filter-btn ${
+                filterType === "all" ? "active" : ""
+              }`}
+              onClick={() => setFilterType("all")}
             >
               All
             </button>
-            <button 
-              className={`home-filter-btn home-filter-btn-lost ${filterType === 'lost' ? 'active' : ''}`}
-              onClick={() => setFilterType('lost')}
+            <button
+              className={`home-filter-btn home-filter-btn-lost ${
+                filterType === "lost" ? "active" : ""
+              }`}
+              onClick={() => setFilterType("lost")}
             >
               Lost
             </button>
-            <button 
-              className={`home-filter-btn home-filter-btn-found ${filterType === 'found' ? 'active' : ''}`}
-              onClick={() => setFilterType('found')}
+            <button
+              className={`home-filter-btn home-filter-btn-found ${
+                filterType === "found" ? "active" : ""
+              }`}
+              onClick={() => setFilterType("found")}
             >
               Found
             </button>
@@ -260,71 +271,99 @@ export default function Home() {
             </p>
           ) : (
             items
-              .filter(item => filterType === 'all' || item.type === filterType)
+              .filter(
+                (item) => filterType === "all" || item.type === filterType
+              )
               .map((item) => (
-              <div 
-                key={item.id} 
-                className={`home-item-row ${highlightedItemId === item.id ? 'highlight-item' : ''}`}
-                data-item-id={item.id}
-              >
-                <div className="home-item-image">
-                  {item.image ? (
-                    <img src={item.image} alt={item.what} />
-                  ) : (
-                    <div className="home-item-no-image"></div>
-                  )}
-                </div>
-
-                <div className="home-item-details">
-                  <div className="home-item-header">
-                    <span className={`home-item-type-label ${item.type === 'lost' ? 'lost' : 'found'}`}>
-                      {item.type === 'lost' ? 'Lost' : 'Found'}
-                    </span>
+                <div
+                  key={item.id}
+                  className={`home-item-row ${
+                    highlightedItemId === item.id ? "highlight-item" : ""
+                  }`}
+                  data-item-id={item.id}
+                >
+                  <div className="home-item-image">
+                    {item.image ? (
+                      <img src={item.image} alt={item.what} />
+                    ) : (
+                      <div className="home-item-no-image"></div>
+                    )}
                   </div>
-                  <h3 className="home-item-what">{item.what}</h3>
-                  <p className="home-item-description">{item.description}</p>
-                  
-                  <div className="home-item-meta">
-                    <div className="home-item-location-row">
-                      <img src="src/assets/Home/location_logo.png" alt="location" className="home-item-icon" />
-                      <p className="home-item-location-text">{item.buildingName}</p>
-                    </div>
-                    <div className="home-item-date-row">
-                      <img src="src/assets/Home/date_logo.png" alt="date" className="home-item-icon" />
-                      <p className="home-item-date-text">
-                        {new Date(item.createdAt).toLocaleDateString('de-DE')} {new Date(item.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="home-item-right">
-                  <div className="home-founder-card">
-                    <div className="home-founder-header">
-                      <div className="home-founder-avatar">
-                        <img 
-                          className="home-founder-image" 
-                          alt="Profile" 
-                          src="/src/assets/Navbar/profile-circle_.png"
+                  <div className="home-item-details">
+                    <div className="home-item-header">
+                      <span
+                        className={`home-item-type-label ${
+                          item.type === "lost" ? "lost" : "found"
+                        }`}
+                      >
+                        {item.type === "lost" ? "Lost" : "Found"}
+                      </span>
+                    </div>
+                    <h3 className="home-item-what">{item.what}</h3>
+                    <p className="home-item-description">{item.description}</p>
+
+                    <div className="home-item-meta">
+                      <div className="home-item-location-row">
+                        <img
+                          src="src/assets/Home/location_logo.png"
+                          alt="location"
+                          className="home-item-icon"
                         />
+                        <p className="home-item-location-text">
+                          {item.buildingName}
+                        </p>
                       </div>
-                      <div className="home-founder-info">
-                        <p className="home-founder-label">{item.type === 'lost' ? 'Lost by' : 'Found by'}</p>
-                        <p className="home-founder-name">{item.founder}</p>
+                      <div className="home-item-date-row">
+                        <img
+                          src="src/assets/Home/date_logo.png"
+                          alt="date"
+                          className="home-item-icon"
+                        />
+                        <p className="home-item-date-text">
+                          {new Date(item.createdAt).toLocaleDateString("de-DE")}{" "}
+                          {new Date(item.createdAt).toLocaleTimeString(
+                            "de-DE",
+                            { hour: "2-digit", minute: "2-digit" }
+                          )}
+                        </p>
                       </div>
                     </div>
-                    <button 
-                      className="home-contact-button"
-                      onClick={() => handleContactButton(item)}
-                      disabled={item.userId === currentUserId}
-                      title={item.userId === currentUserId ? 'You cannot contact yourself' : 'Click to chat'}
-                    >
-                      Contact
-                    </button>
+                  </div>
+
+                  <div className="home-item-right">
+                    <div className="home-founder-card">
+                      <div className="home-founder-header">
+                        <div className="home-founder-avatar">
+                          <img
+                            className="home-founder-image"
+                            alt="Profile"
+                            src="/src/assets/Navbar/profile-circle_.png"
+                          />
+                        </div>
+                        <div className="home-founder-info">
+                          <p className="home-founder-label">
+                            {item.type === "lost" ? "Lost by" : "Found by"}
+                          </p>
+                          <p className="home-founder-name">{item.founder}</p>
+                        </div>
+                      </div>
+                      <button
+                        className="home-contact-button"
+                        onClick={() => handleContactButton(item)}
+                        disabled={item.userId === currentUserId}
+                        title={
+                          item.userId === currentUserId
+                            ? "You cannot contact yourself"
+                            : "Click to chat"
+                        }
+                      >
+                        Contact
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))
           )}
         </div>
       </div>

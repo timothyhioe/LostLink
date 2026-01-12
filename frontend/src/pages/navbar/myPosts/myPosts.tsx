@@ -100,15 +100,23 @@ export default function MyItems() {
       const data = await response.json()
 
       // Transform backend data to frontend format
-      const transformedItems: UserItem[] = data.items.map((item: DBItem) => ({
-        ...item,
-        image: item.images.length > 0 ? `${BASE_URL}${item.images[0].url}` : '',
-        what: item.title,
-        where: `Where found: ${item.buildingName}`,
-        location_display: `Location: ${item.buildingName}`,
-        when: `When found: ${new Date(item.createdAt).toLocaleDateString('en-US')} ${new Date(item.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
-        founder: item.user?.name || 'Unknown'
-      }))
+      const transformedItems: UserItem[] = data.items.map((item: DBItem) => {
+        // Only prepend BASE_URL if the image URL is not already absolute
+        const imageUrl = item.images.length > 0 ? item.images[0].url : '';
+        const fullImageUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://')
+          ? imageUrl
+          : `${BASE_URL}${imageUrl}`;
+        
+        return {
+          ...item,
+          image: fullImageUrl,
+          what: item.title,
+          where: `Where found: ${item.buildingName}`,
+          location_display: `Location: ${item.buildingName}`,
+          when: `When found: ${new Date(item.createdAt).toLocaleDateString('en-US')} ${new Date(item.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
+          founder: item.user?.name || 'Unknown'
+        };
+      })
 
       setItems(transformedItems)
       setPostLimitReached(transformedItems.length >= 10)
