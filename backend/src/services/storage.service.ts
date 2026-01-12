@@ -1,11 +1,14 @@
-import { minioClient } from "../config/minio";
+import {
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
+import { Client as MinioClient } from "minio";
+import { Readable } from "stream";
+import { storageConfig } from "../config/storage";
 import { env } from "../config/env";
 import { logger } from "../utils/logger";
-import { Readable } from "stream";
 import "multer";
-
-//storage service logic for minio service
-//we're using minio for storing item images, which can be later migrated to AWS S3 on deployment
 
 export interface UploadResult {
   filename: string;
@@ -14,13 +17,8 @@ export interface UploadResult {
 }
 
 export class StorageService {
-  private readonly bucketName: string;
+  private readonly config = storageConfig;
 
-  constructor() {
-    this.bucketName = env.MINIO_BUCKET;
-  }
-
-  //upload image
   async uploadFile(
     file: Express.Multer.File,
     folder: string = "items"
@@ -33,28 +31,62 @@ export class StorageService {
     const filename = `${folder}/${timestamp}-${sanitizedOriginalName}`;
 
     try {
-      const stream = Readable.from(file.buffer);
+      if (this.config.type === "s3") {
+        // AWS S3 upload
+        const s3Client = this.config.client as any;
+        const command = new PutObjectCommand({
+          Bucket: this.config.bucket,
+          Key: filename,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        });
 
-      await minioClient.putObject(
-        this.bucketName,
-        filename,
-        stream,
-        file.size,
-        {
-          "Content-Type": file.mimetype,
-        }
-      );
+        logger.info("Attempting S3 upload", {
+          bucket: this.config.bucket,
+          key: filename,
+          region: this.config.region,
+        });
 
-      // Generate proxy URL instead of presigned URL
-      const url = this.getProxyUrl(filename);
+        const result = await s3Client.send(command);
 
-      logger.info("File uploaded successfully", { filename, size: file.size });
+        logger.info("S3 upload result", { result, etag: result.ETag });
 
-      return {
-        filename,
-        url,
-        size: file.size,
-      };
+        // Generate public S3 URL
+        const url = `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${filename}`;
+
+        logger.info("File uploaded to S3", { filename, size: file.size, url });
+
+        return {
+          filename,
+          url,
+          size: file.size,
+        };
+      } else {
+        // MinIO upload (development)
+        const minioClient = this.config.client as MinioClient;
+        const stream = Readable.from(file.buffer);
+
+        await minioClient.putObject(
+          this.config.bucket,
+          filename,
+          stream,
+          file.size,
+          {
+            "Content-Type": file.mimetype,
+          }
+        );
+
+        // Generate proxy URL for development
+        const url = this.getProxyUrl(filename);
+
+        logger.info("File uploaded to MinIO", { filename, size: file.size });
+
+        return {
+          filename,
+          url,
+          size: file.size,
+        };
+      }
     } catch (error) {
       logger.error("Failed to upload file", { error, filename });
       throw new Error("Failed to upload file to storage");
@@ -79,23 +111,39 @@ export class StorageService {
     filename: string,
     expiresIn: number = 7 * 24 * 60 * 60
   ): Promise<string> {
-    try {
-      const url = await minioClient.presignedGetObject(
-        this.bucketName,
-        filename,
-        expiresIn
-      );
-      return url;
-    } catch (error) {
-      logger.error("Failed to generate file URL", { error, filename });
-      throw new Error("Failed to generate file URL");
+    if (this.config.type === "minio") {
+      const minioClient = this.config.client as MinioClient;
+      try {
+        const url = await minioClient.presignedGetObject(
+          this.config.bucket,
+          filename,
+          expiresIn
+        );
+        return url;
+      } catch (error) {
+        logger.error("Failed to generate file URL", { error, filename });
+        throw new Error("Failed to generate file URL");
+      }
+    } else {
+      // For S3, return direct URL (public bucket)
+      return `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${filename}`;
     }
   }
 
   //delete image
   async deleteFile(filename: string): Promise<void> {
     try {
-      await minioClient.removeObject(this.bucketName, filename);
+      if (this.config.type === "s3") {
+        const s3Client = this.config.client as any;
+        const command = new DeleteObjectCommand({
+          Bucket: this.config.bucket,
+          Key: filename,
+        });
+        await s3Client.send(command);
+      } else {
+        const minioClient = this.config.client as MinioClient;
+        await minioClient.removeObject(this.config.bucket, filename);
+      }
       logger.info("File deleted successfully", { filename });
     } catch (error) {
       logger.error("Failed to delete file", { error, filename });
@@ -106,8 +154,19 @@ export class StorageService {
   //check if image alrd exists
   async fileExists(filename: string): Promise<boolean> {
     try {
-      await minioClient.statObject(this.bucketName, filename);
-      return true;
+      if (this.config.type === "s3") {
+        const s3Client = this.config.client as any;
+        const command = new HeadObjectCommand({
+          Bucket: this.config.bucket,
+          Key: filename,
+        });
+        await s3Client.send(command);
+        return true;
+      } else {
+        const minioClient = this.config.client as MinioClient;
+        await minioClient.statObject(this.config.bucket, filename);
+        return true;
+      }
     } catch (error) {
       return false;
     }

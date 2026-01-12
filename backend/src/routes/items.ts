@@ -7,6 +7,7 @@ import { db } from "../config/database";
 import { items, itemImages, users } from "../db/schema";
 import { sql, eq, and, desc, count, or, like, inArray } from "drizzle-orm";
 import { minioClient } from "../config/minio";
+import { storageConfig } from "../config/storage";
 import { env } from "../config/env";
 import { buildingService } from "../services/building.service";
 
@@ -75,23 +76,18 @@ const router = Router();
 router.post("/", authenticate, uploadSingle, async (req, res, next) => {
   try {
     const userId = req.user!.userId;
-    const {
-      title,
-      description,
-      type,
-      buildingName,
-      latitude,
-      longitude,
-    } = req.body;
-
+    const { title, description, type, buildingName, latitude, longitude } =
+      req.body;
 
     // Anti-spam: Limit to 10 items per user
-    const userItemCount = await db.select({ count: count() })
+    const userItemCount = await db
+      .select({ count: count() })
       .from(items)
       .where(eq(items.userId, userId));
     if ((userItemCount[0]?.count ?? 0) >= 10) {
       return res.status(429).json({
-        message: "Post limit reached: Each user can only have up to 10 items. Delete an item to add a new one."
+        message:
+          "Post limit reached: Each user can only have up to 10 items. Delete an item to add a new one.",
       });
     }
 
@@ -567,15 +563,29 @@ router.get("/images/:filename", async (req, res, next) => {
     const { filename } = req.params;
     const fullPath = `items/${filename}`;
 
+    // In S3 mode, redirect to direct S3 URL
+    if (storageConfig.type === "s3") {
+      const s3Url = `https://${storageConfig.bucket}.s3.${storageConfig.region}.amazonaws.com/${fullPath}`;
+      return res.redirect(301, s3Url);
+    }
+
+    // MinIO mode: serve from local MinIO
+    if (!minioClient) {
+      return res.status(500).json({ message: "Storage not configured" });
+    }
+
     // Check if file exists
     try {
-      await minioClient.statObject(env.MINIO_BUCKET, fullPath);
+      await minioClient.statObject(storageConfig.bucket, fullPath);
     } catch (error) {
       return res.status(404).json({ message: "Image not found" });
     }
 
     // Get the file stream from MinIO
-    const dataStream = await minioClient.getObject(env.MINIO_BUCKET, fullPath);
+    const dataStream = await minioClient.getObject(
+      storageConfig.bucket,
+      fullPath
+    );
 
     // Detect content type from filename
     const contentType = filename.toLowerCase().endsWith(".png")
@@ -781,14 +791,8 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
       return res.status(400).json({ message: "Item ID is required" });
     }
     const userId = req.user!.userId;
-    const {
-      title,
-      description,
-      buildingName,
-      status,
-      longitude,
-      latitude,
-    } = req.body;
+    const { title, description, buildingName, status, longitude, latitude } =
+      req.body;
 
     // Find item
     const [item] = await db
@@ -1020,13 +1024,17 @@ router.delete("/:id", authenticate, async (req, res, next) => {
       .from(itemImages)
       .where(eq(itemImages.itemId, id as string));
 
-    // Delete images from MinIO
+    // Delete images from storage
     for (const image of imagesResult) {
       try {
         await storageService.deleteFile(image.filename);
-        logger.info("Image deleted from MinIO", { filename: image.filename });
+        const storageType = storageConfig.type === "s3" ? "S3" : "MinIO";
+        logger.info(`Image deleted from ${storageType}`, {
+          filename: image.filename,
+        });
       } catch (error) {
-        logger.error("Failed to delete image from MinIO", {
+        const storageType = storageConfig.type === "s3" ? "S3" : "MinIO";
+        logger.error(`Failed to delete image from ${storageType}`, {
           error,
           filename: image.filename,
         });
