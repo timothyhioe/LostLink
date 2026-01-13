@@ -42,7 +42,11 @@ const BASE_URL = 'http://localhost:5000'
 export default function MyItems() {
   const [items, setItems] = useState<UserItem[]>([])
   const [postLimitReached, setPostLimitReached] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Initialize from localStorage
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme === "dark";
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -60,6 +64,38 @@ export default function MyItems() {
     window.addEventListener('itemPosted', handleItemPosted)
     return () => window.removeEventListener('itemPosted', handleItemPosted)
   }, [])
+
+  // Sync theme with localStorage when component mounts or window gains focus
+  useEffect(() => {
+    const syncTheme = () => {
+      const savedTheme = localStorage.getItem("theme");
+      const shouldBeDark = savedTheme === "dark";
+      if (isDarkMode !== shouldBeDark) {
+        setIsDarkMode(shouldBeDark);
+      }
+    };
+
+    // Sync when window gains focus (user navigates back to this page)
+    const handleFocus = () => {
+      syncTheme();
+    };
+
+    // Listen for custom theme change events (from Navbar)
+    const handleThemeChange = () => {
+      syncTheme();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("themechange", handleThemeChange as EventListener);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener(
+        "themechange",
+        handleThemeChange as EventListener
+      );
+    };
+  }, [isDarkMode]);
 
   const handleThemeToggle = (isDark: boolean) => {
     setIsDarkMode(isDark)

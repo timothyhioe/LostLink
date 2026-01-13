@@ -18,6 +18,7 @@ interface NavbarProps {
   isDarkMode: boolean;
   onThemeToggle: (isDark: boolean) => void;
   onItemPosted?: () => void;
+  onSearch?: (searchQuery: string) => void;
 }
 
 export default function Navbar({
@@ -26,6 +27,7 @@ export default function Navbar({
   isDarkMode,
   onThemeToggle,
   onItemPosted,
+  onSearch,
 }: NavbarProps) {
   const { unreadNotifications, chatOpenTrigger } = useChat();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -33,6 +35,7 @@ export default function Navbar({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [postLimitReached, setPostLimitReached] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   // Fetch user's post count for post limit
   useEffect(() => {
@@ -115,6 +118,27 @@ export default function Navbar({
     handleCloseMenu();
   };
 
+  const handleSearch = () => {
+    if (onSearch) {
+      onSearch(searchQuery);
+    }
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    // Optional: search in real-time as user types
+    if (onSearch) {
+      onSearch(query);
+    }
+  };
+
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   const handleLogoutWrapper = () => {
     handleCloseMenu();
     onLogout();
@@ -171,8 +195,10 @@ export default function Navbar({
               type="text" 
               placeholder="Search..." 
               className="navbar-search-input"
+              value={searchQuery}
+              onChange={handleSearchInputChange}
+              onKeyPress={handleSearchKeyPress}
             />
-            <button className="navbar-search-btn">Search</button>
           </div>
 
           <div className="navbar-right">
