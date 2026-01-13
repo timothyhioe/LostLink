@@ -108,7 +108,7 @@ export default function Login() {
         </form>
 
         <div className="signup-link">
-          Don't have a user? <a href="#signup">Sign up</a>
+          Don't have a user? <a href="/signup">Sign up</a>
         </div>
       </div>
 

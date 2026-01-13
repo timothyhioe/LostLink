@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './myPosts.css'
 import Navbar from "../navbar"
+import locationLogo from "../../../assets/Home/location_logo.png"
+import dateLogo from "../../../assets/Home/date_logo.png"
 
 interface ItemImage {
   url: string
@@ -256,11 +258,11 @@ export default function MyItems() {
                 
                 <div className="my-item-meta">
                   <div className="my-item-location-row">
-                    <img src="src/assets/Home/location_logo.png" alt="location" className="my-item-icon" />
+                    <img src={locationLogo} alt="location" className="my-item-icon" />
                     <p className="my-item-location-text">{item.buildingName}</p>
                   </div>
                   <div className="my-item-date-row">
-                    <img src="src/assets/Home/date_logo.png" alt="date" className="my-item-icon" />
+                    <img src={dateLogo} alt="date" className="my-item-icon" />
                     <p className="my-item-date-text">
                       {new Date(item.createdAt).toLocaleDateString('en-US')} {new Date(item.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </p>
