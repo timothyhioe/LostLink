@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/home/home";
 import Login from "./pages/auth/login/login";
+import Signup from "./pages/auth/signup/signup";
 import MyPosts from "./pages/navbar/myPosts/myPosts";
 import MapView from "./pages/Map/MapView";
 import { ChatProvider } from "./contexts/ChatContext";
@@ -41,6 +42,14 @@ export default function App() {
             element={
               <LoginRoute>
                 <Login />
+              </LoginRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <LoginRoute>
+                <Signup />
               </LoginRoute>
             }
           />

@@ -149,11 +149,13 @@ router.post("/register", async (req: Request, res: Response) => {
 
     logger.info("User registered", { userId: user.id, email: user.email });
 
-    // TODO: implement real email verification via external API
-    await sendEmail({
+    // Send verification email (non-blocking - don't fail registration if email fails)
+    sendEmail({
       to: normalizedEmail,
       subject: "LostLink Verification Code",
       text: `Your verification code is ${verificationCode}. It expires in 15 minutes.`,
+    }).catch((err) => {
+      logger.error("Failed to send verification email", { error: err, email: normalizedEmail });
     });
 
     return res.status(201).json({
@@ -167,6 +169,7 @@ router.post("/register", async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error("Registration failed", { error });
+    console.error("Registration error details:", error);
     return res.status(500).json({ message: "Registration failed" });
   }
 });
