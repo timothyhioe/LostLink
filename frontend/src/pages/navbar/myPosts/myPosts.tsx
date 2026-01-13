@@ -36,8 +36,8 @@ interface UserItem extends DBItem {
   founder: string
 }
 
-const API_BASE_URL = 'http://localhost:5000/api'
-const BASE_URL = 'http://localhost:5000'
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function MyItems() {
   const [items, setItems] = useState<UserItem[]>([])

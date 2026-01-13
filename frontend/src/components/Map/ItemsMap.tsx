@@ -48,12 +48,13 @@ interface ItemsMapProps {
 export function ItemsMap({
   className,
   style,
-  apiBaseUrl = "http://localhost:5000/api",
+  apiBaseUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`,
   items: providedItems,
   typeFilter,
   statusFilter,
   isDarkMode = false,
 }: ItemsMapProps) {
+  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
@@ -166,7 +167,7 @@ export function ItemsMap({
     (item: MapItem) => {
       const imageUrl =
         item.images && item.images.length > 0
-          ? `http://localhost:5000${item.images[0].url}`
+          ? `${BASE_URL}${item.images[0].url}`
           : null;
       const formattedDate = new Date(item.createdAt).toLocaleDateString(
         "de-DE",
@@ -240,7 +241,7 @@ export function ItemsMap({
               .map((item) => {
                 const imageUrl =
                   item.images && item.images.length > 0
-                    ? `http://localhost:5000${item.images[0].url}`
+                    ? `${BASE_URL}${item.images[0].url}`
                     : null;
                 const formattedDate = new Date(
                   item.createdAt

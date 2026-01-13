@@ -34,14 +34,18 @@ export default function Navbar({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [postLimitReached, setPostLimitReached] = useState<boolean>(false);
   const navigate = useNavigate();
+  const API_BASE_URL = `${
+    import.meta.env.VITE_API_URL || "http://localhost:5000"
+  }/api`;
+
   // Fetch user's post count for post limit
   useEffect(() => {
     const fetchMyPostCount = async () => {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem("authToken");
       if (!authToken) return;
       try {
-        const response = await fetch('http://localhost:5000/api/items/my', {
-          headers: { 'Authorization': `Bearer ${authToken}` }
+        const response = await fetch(`${API_BASE_URL}/items/my`, {
+          headers: { Authorization: `Bearer ${authToken}` },
         });
         if (response.ok) {
           const data = await response.json();
@@ -52,17 +56,17 @@ export default function Navbar({
       }
     };
     fetchMyPostCount();
-  }, [isPostFormOpen]);
+  }, [isPostFormOpen, API_BASE_URL]);
 
   // Listen for itemDeleted event to refresh post count
   useEffect(() => {
     const handleItemDeleted = () => {
       const fetchMyPostCount = async () => {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem("authToken");
         if (!authToken) return;
         try {
-          const response = await fetch('http://localhost:5000/api/items/my', {
-            headers: { 'Authorization': `Bearer ${authToken}` }
+          const response = await fetch(`${API_BASE_URL}/items/my`, {
+            headers: { Authorization: `Bearer ${authToken}` },
           });
           if (response.ok) {
             const data = await response.json();
@@ -74,8 +78,8 @@ export default function Navbar({
       };
       fetchMyPostCount();
     };
-    window.addEventListener('itemDeleted', handleItemDeleted);
-    return () => window.removeEventListener('itemDeleted', handleItemDeleted);
+    window.addEventListener("itemDeleted", handleItemDeleted);
+    return () => window.removeEventListener("itemDeleted", handleItemDeleted);
   }, []);
 
   // Calculate total unread notifications
@@ -163,20 +167,26 @@ export default function Navbar({
       <nav className={`navbar ${isDarkMode ? "dark-mode" : "light-mode"}`}>
         <div className="navbar-container">
           <div className="navbar-left">
-            <h1 className="navbar-logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>LostLink</h1>
+            <h1
+              className="navbar-logo"
+              onClick={handleLogoClick}
+              style={{ cursor: "pointer" }}
+            >
+              LostLink
+            </h1>
           </div>
 
           <div className="navbar-search-container">
-            <input 
-              type="text" 
-              placeholder="Search..." 
+            <input
+              type="text"
+              placeholder="Search..."
               className="navbar-search-input"
             />
             <button className="navbar-search-btn">Search</button>
           </div>
 
           <div className="navbar-right">
-            <button 
+            <button
               className="navbar-post-button"
               onClick={handlePostClick}
               disabled={postLimitReached}
@@ -239,7 +249,7 @@ export default function Navbar({
                 <span className="navbar-message-badge">{unreadCount}</span>
               )}
             </button>
-            
+
             <div className="navbar-profile-container">
               <button
                 className="navbar-profile-btn"
@@ -263,11 +273,11 @@ export default function Navbar({
                   >
                     My Posts
                   </button>
-                  <button 
+                  <button
                     className="dropdown-item logout-item"
                     onClick={() => {
-                      setIsProfileDropdownOpen(false)
-                      onLogout()
+                      setIsProfileDropdownOpen(false);
+                      onLogout();
                     }}
                   >
                     Log Out
@@ -357,8 +367,8 @@ export default function Navbar({
             />{" "}
             Messages
           </button>
-          <button 
-            className="navbar-profile-btn navbar-mobile-item" 
+          <button
+            className="navbar-profile-btn navbar-mobile-item"
             title="Profile"
             onClick={handleMyPostsClick}
           >

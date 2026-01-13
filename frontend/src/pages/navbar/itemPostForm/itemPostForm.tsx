@@ -9,7 +9,7 @@ interface ItemPostFormProps {
   onPostSuccess?: () => void;
 }
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
 
 interface Building {
   id: string;
@@ -55,7 +55,7 @@ export default function ItemPostForm({
       const authToken = localStorage.getItem('authToken');
       if (!authToken) return;
       try {
-        const response = await fetch('http://localhost:5000/api/items/my', {
+        const response = await fetch(`${API_BASE_URL}/items/my`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         if (response.ok) {
