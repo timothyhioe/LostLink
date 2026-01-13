@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import "./home.css";
 import Navbar from "../navbar/navbar";
 import { useChat } from "../../contexts/ChatContext";
+import locationLogo from "../../assets/Home/location_logo.png";
+import dateLogo from "../../assets/Home/date_logo.png";
+import profileIcon from "../../assets/Navbar/profile-circle_.png";
 
 interface ItemImage {
   url: string;
@@ -57,6 +60,7 @@ export default function Home() {
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(
     null
   );
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Fetch items from backend
   const fetchItems = async () => {
@@ -214,6 +218,10 @@ export default function Home() {
     openChatWithUser(item.userId, item.founder);
   };
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
   const handleLogoClick = () => {
     // Logo click handler
   };
@@ -225,6 +233,7 @@ export default function Home() {
         onLogoClick={handleLogoClick}
         isDarkMode={isDarkMode}
         onThemeToggle={handleThemeToggle}
+        onSearch={handleSearch}
       />
 
       {/* Main content */}
@@ -276,6 +285,16 @@ export default function Home() {
               .filter(
                 (item) => filterType === "all" || item.type === filterType
               )
+              .filter((item) => {
+                // Search filter
+                const query = searchQuery.toLowerCase();
+                return (
+                  item.what.toLowerCase().includes(query) ||
+                  item.founder.toLowerCase().includes(query) ||
+                  item.description.toLowerCase().includes(query) ||
+                  item.buildingName.toLowerCase().includes(query)
+                );
+              })
               .map((item) => (
                 <div
                   key={item.id}
@@ -308,7 +327,7 @@ export default function Home() {
                     <div className="home-item-meta">
                       <div className="home-item-location-row">
                         <img
-                          src="src/assets/Home/location_logo.png"
+                          src={locationLogo}
                           alt="location"
                           className="home-item-icon"
                         />
@@ -318,7 +337,7 @@ export default function Home() {
                       </div>
                       <div className="home-item-date-row">
                         <img
-                          src="src/assets/Home/date_logo.png"
+                          src={dateLogo}
                           alt="date"
                           className="home-item-icon"
                         />
@@ -340,7 +359,7 @@ export default function Home() {
                           <img
                             className="home-founder-image"
                             alt="Profile"
-                            src="/src/assets/Navbar/profile-circle_.png"
+                            src={profileIcon}
                           />
                         </div>
                         <div className="home-founder-info">
