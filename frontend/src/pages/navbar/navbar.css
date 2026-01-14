@@ -468,6 +468,22 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar-username {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-light);
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.3s ease;
+}
+
+.navbar.dark-mode .navbar-username {
+  color: white;
 }
 
 .navbar-profile-dropdown {

@@ -36,7 +36,21 @@ export default function Navbar({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [postLimitReached, setPostLimitReached] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userName, setUserName] = useState<string>("");
   const navigate = useNavigate();
+
+  // Get user name from localStorage
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        setUserName(userData.name || "");
+      } catch {
+        // Unable to parse user data
+      }
+    }
+  }, []);
   // Fetch user's post count for post limit
   useEffect(() => {
     const fetchMyPostCount = async () => {
@@ -277,6 +291,7 @@ export default function Navbar({
                   alt="Profile"
                 />
               </button>
+              {userName && <span className="navbar-username">{userName}</span>}
               {isProfileDropdownOpen && (
                 <div
                   className={`navbar-profile-dropdown ${
