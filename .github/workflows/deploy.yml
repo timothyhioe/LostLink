@@ -166,9 +166,19 @@ jobs:
             fi
             echo "Build completed"
             
+            # Create logs directory if it doesn't exist (required for PM2)
+            echo "Creating logs directory..."
+            mkdir -p "\$BACKEND_PATH/logs"
+            
             # PM2 Process Management
             PM2_PROCESS_NAME="lostlink-backend"
             echo "Managing PM2 process: \$PM2_PROCESS_NAME"
+            
+            # Check if PM2 process exists and is in errored state
+            if pm2 list | grep -q "\$PM2_PROCESS_NAME.*errored"; then
+              echo "PM2 process '\$PM2_PROCESS_NAME' is in errored state. Deleting and restarting..."
+              pm2 delete "\$PM2_PROCESS_NAME" || true
+            fi
             
             # Check if PM2 process exists
             if ! pm2 list | grep -q "\$PM2_PROCESS_NAME"; then
