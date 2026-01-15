@@ -1,10 +1,12 @@
 name: Deploy Backend to EC2
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
     branches:
       - main
-    # triggers only on direct push to main, not on PRs
   workflow_dispatch:
     # manual triggering on deployment option
 
@@ -12,6 +14,9 @@ jobs:
   deploy-backend:
     name: Deploy Backend to EC2
     runs-on: ubuntu-latest
+
+    # only deploy if CI workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
     steps:
       - name: Checkout code
