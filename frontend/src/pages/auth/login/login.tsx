@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './login.css';
 
 //auto detect API URL based on current environment
@@ -10,6 +11,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showVerificationPrompt, setShowVerificationPrompt] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +38,14 @@ export default function Login() {
       console.log('Login response data:', data);
 
       if (!response.ok) {
+        // Handle unverified email case
+        if (response.status === 403 && data.message?.includes("not verified")) {
+          setShowVerificationPrompt(true);
+          setError(data.message || 'Login failed');
+          setLoading(false);
+          return;
+        }
+        
         setError(data.message || 'Login failed');
         setLoading(false);
         console.log('Login failed:', data.message);
@@ -72,7 +83,20 @@ export default function Login() {
       <div className="login-box">
         <h1>Login</h1>
         
-        {error && <div className="error-message">{error}</div>}
+        {error && (
+          <div className="error-message">
+            <p>{error}</p>
+            {showVerificationPrompt && (
+              <button 
+                type="button"
+                className="verify-link-btn"
+                onClick={() => navigate('/verify-email', { state: { email } })}
+              >
+                Go to Verification
+              </button>
+            )}
+          </div>
+        )}
         {success && <div className="success-message">{success}</div>}
         
         <form onSubmit={handleLogin}>
@@ -109,6 +133,10 @@ export default function Login() {
 
         <div className="signup-link">
           Don't have a user? <a href="/signup">Sign up</a>
+        </div>
+
+        <div className="verify-email-link">
+          Need to verify your email? <a href="/verify-email">Verify here</a>
         </div>
       </div>
 

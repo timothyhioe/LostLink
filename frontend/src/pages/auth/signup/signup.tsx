@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './signup.css';
 
@@ -17,6 +17,17 @@ export default function Signup() {
   const [verificationCode, setVerificationCode] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Check for pending verification on mount
+  useEffect(() => {
+    const pendingEmail = localStorage.getItem('signupEmail');
+    const isReturningFromSignup = localStorage.getItem('isReturningFromSignup');
+    if (pendingEmail && isReturningFromSignup === 'true') {
+      // Only redirect if we just came from signup, then clear the flag
+      localStorage.removeItem('isReturningFromSignup');
+      navigate('/verify-email', { state: { email: pendingEmail } });
+    }
+  }, [navigate]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +84,11 @@ export default function Signup() {
 
       //show success and verification form
       setSuccess('Account created! Check your email for verification code.');
-      setShowVerification(true);
+      localStorage.setItem('signupEmail', email);
+      localStorage.setItem('isReturningFromSignup', 'true');
+      setTimeout(() => {
+        navigate('/verify-email', { state: { email } });
+      }, 1500);
       setLoading(false);
     } catch (err) {
       setError('An error occurred. Please try again.');

@@ -1,4 +1,4 @@
-.login-container {
+.verify-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -7,7 +7,7 @@
   font-family: 'Geist', system-ui, sans-serif;
 }
 
-.login-box {
+.verify-box {
   background: white;
   border-radius: 8px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
@@ -17,7 +17,7 @@
   background: var(--color-primary);
 }
 
-.login-box h1 {
+.verify-box h1 {
   margin: 0 0 1.5rem 0;
   text-align: center;
   color: white;
@@ -33,30 +33,6 @@
   margin-bottom: 1rem;
   font-size: 0.9rem;
   border-left: 4px solid #c33;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.error-message p {
-  margin: 0;
-}
-
-.verify-link-btn {
-  background: #c33;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.2s;
-  font-size: 0.9rem;
-  align-self: flex-start;
-}
-
-.verify-link-btn:hover {
-  background: #a22;
 }
 
 .success-message {
@@ -98,7 +74,12 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.login-btn {
+.form-group input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.verify-btn {
   width: 100%;
   padding: 0.75rem;
   border: none;
@@ -109,103 +90,117 @@
   transition: transform 0.2s, box-shadow 0.2s;
   font-family: 'Geist', system-ui, sans-serif;
   margin-bottom: 0.75rem;
+  background-color: white;
+  color: var(--color-primary);
 }
 
-.login-btn:hover:not(:disabled) {
+.verify-btn:hover:not(:disabled) {
   transform: translateY(-1.5px);
-  box-shadow: 0 2px 8px var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.login-btn:disabled {
+.verify-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.dev-btn {
-  width: 100%;
+.verification-info {
+  text-align: center;
+  color: white;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.verification-info strong {
+  font-weight: 600;
+}
+
+.verification-dev-note {
+  background: rgba(255, 255, 255, 0.1);
   padding: 0.75rem;
-  border: none;
   border-radius: 4px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  font-family: 'Geist', system-ui, sans-serif;
-}
-
-.dev-btn:hover {
-  transform: translateY(-1.5px);
-  box-shadow: 0 2px 8px var(--color-primary);
-}
-
-.signup-link {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
   text-align: center;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid rgba(255, 255, 255, 0.3);
+}
+
+.resend-section {
   margin-top: 1rem;
-  font-size: 0.9rem;
-  color: white;
-}
-
-.signup-link a {
-  color: var(--color-secondary);
-  text-decoration: none;
-  font-weight: 600;
-  transition: opacity 0.2s;
-}
-
-.signup-link a:hover {
-  opacity: 0.8;
-}
-
-.verify-email-link {
   text-align: center;
-  margin-top: 0.75rem;
-  font-size: 0.9rem;
-  color: white;
 }
 
-.verify-email-link a {
-  color: var(--color-secondary);
-  text-decoration: none;
+.resend-section p {
+  color: white;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.resend-btn {
+  background: transparent;
+  color: white;
+  border: none;
+  padding: 0.5rem 0;
+  cursor: pointer;
   font-weight: 600;
   transition: opacity 0.2s;
-}
-
-.verify-email-link a:hover {
-  opacity: 0.8;
-}
-  font-weight: 600;
-  transition: color 0.2s;
-}
-
-.signup-link a:hover {
+  font-size: 0.9rem;
+  font-family: 'Geist', system-ui, sans-serif;
   text-decoration: underline;
 }
 
-.login-lostlink-text {
-    font-weight: 600;
-    font-size: 3rem;
-    margin-left: 3vw;
+.resend-btn:hover:not(:disabled) {
+  opacity: 0.8;
 }
 
-.login-lostlink-container {
-    display: flex;
-    flex-direction: column;
+.resend-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.login-lostlink-description {
-    font-size: 2rem;
-    margin-left: 3vw;
-    width: 20vw;
+.back-link {
+  margin-top: 1rem;
+  text-align: center;
 }
 
-@media (max-width: 480px) {
-  .login-container {
-    flex-direction: column;
-    justify-content: flex-start;
-    padding-top: 15vh;
+.back-link a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-weight: 600;
+  transition: opacity 0.2s;
+  font-size: 0.9rem;
+}
+
+.back-link a:hover {
+  opacity: 0.8;
+}
+
+.verify-lostlink-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.verify-lostlink-text {
+  font-weight: 600;
+  font-size: 3rem;
+  margin: 0;
+  margin-left: 3vw;
+}
+
+.verify-lostlink-description {
+  font-size: 2rem;
+  margin: 0;
+  margin-left: 3vw;
+  width: 20vw;
+}
+
+@media (max-width: 768px) {
+  .verify-box {
+    margin: 20px;
   }
 
-  .login-lostlink-container {
+  .verify-lostlink-container {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -213,28 +208,35 @@
     order: -1;
   }
 
-  .login-lostlink-text {
+  .verify-lostlink-text {
     font-size: 2rem;
     margin-left: 0;
     text-align: center;
   }
 
-  .login-lostlink-description {
+  .verify-lostlink-description {
     font-size: 1rem;
     margin-left: 0;
     width: 100%;
     text-align: center;
-    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .verify-container {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 15vh;
   }
 
-  .login-box {
+  .verify-box {
     padding: 1.5rem;
     margin: 1rem;
     order: 0;
     width: 90%;
   }
 
-  .login-box h1 {
+  .verify-box h1 {
     font-size: 1.5rem;
   }
 }

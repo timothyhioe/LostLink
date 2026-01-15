@@ -431,6 +431,118 @@ router.post("/verify-code", async (req: Request, res: Response) => {
 
 /**
  * @openapi
+ * /auth/resend-code:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Resend verification code
+ *     description: Resend the verification code to the user's email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: john.doe@stud.h-da.de
+ *                 description: Registered email address
+ *     responses:
+ *       200:
+ *         description: Verification code resent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Verification code sent to your email
+ *       400:
+ *         description: Email not provided or user already verified
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post("/resend-code", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res
+        .status(400)
+        .json({ message: "Email is required" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const [user] = await db
+      .select({
+        id: users.id,
+        emailVerified: users.emailVerified,
+      })
+      .from(users)
+      .where(eq(users.email, normalizedEmail))
+      .limit(1);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ message: "Email already verified" });
+    }
+
+    // Generate new verification code
+    const verificationCode = Math.random().toString().substring(2, 8).padStart(6, "0");
+    const expirationTime = new Date();
+    expirationTime.setMinutes(expirationTime.getMinutes() + 15);
+
+    // Update verification code
+    await db
+      .update(users)
+      .set({
+        verificationCode,
+        verificationCodeExpires: expirationTime,
+      })
+      .where(eq(users.id, user.id));
+
+    logger.info("Verification code resent", { userId: user.id, email: normalizedEmail });
+
+    // Send verification email (non-blocking - don't fail resend if email fails)
+    await sendEmail({
+      to: normalizedEmail,
+      subject: "LostLink Verification Code",
+      text: `Your verification code is ${verificationCode}. It expires in 15 minutes.`,
+    }).catch((err) => {
+      logger.error("Failed to send verification email", { error: err, email: normalizedEmail });
+    });
+
+    return res.json({ message: "Verification code sent to your email" });
+  } catch (error) {
+    logger.error("Resend verification code failed", { error });
+    return res.status(500).json({ message: "Failed to resend verification code" });
+  }
+});
+
+/**
+ * @openapi
  * /auth/me:
  *   get:
  *     tags:
