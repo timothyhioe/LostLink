@@ -216,7 +216,7 @@ export function ItemsMap({
       </div>
     `;
     },
-    [isDarkMode]
+    [isDarkMode, BASE_URL]
   );
 
   // Create popup content for clustered items
@@ -288,7 +288,7 @@ export function ItemsMap({
       </div>
     `;
     },
-    [isDarkMode]
+    [isDarkMode, BASE_URL]
   );
 
   // Initialize map and add markers

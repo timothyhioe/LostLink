@@ -6,27 +6,17 @@ import './verify.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function VerifyEmail() {
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const stateEmail = location.state?.email;
+  const storedEmail = typeof window !== 'undefined' ? localStorage.getItem('signupEmail') : null;
+  
+  const [email, setEmail] = useState<string>(() => stateEmail || storedEmail || '');
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Get email from state or localStorage
-  useEffect(() => {
-    const stateEmail = location.state?.email;
-    const storedEmail = localStorage.getItem('signupEmail');
-    
-    if (stateEmail) {
-      setEmail(stateEmail);
-    } else if (storedEmail) {
-      setEmail(storedEmail);
-    }
-    // Don't redirect if no email - allow user to enter it manually
-  }, [location.state]);
 
   const handleVerifyEmail = async (e: React.FormEvent) => {
     e.preventDefault();

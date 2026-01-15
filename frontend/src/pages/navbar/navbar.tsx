@@ -36,7 +36,18 @@ export default function Navbar({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [postLimitReached, setPostLimitReached] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [userName, setUserName] = useState<string>("");
+  const [userName] = useState<string>(() => {
+    const user = typeof window !== 'undefined' ? localStorage.getItem("user") : null;
+    if (user) {
+      try {
+        const parsedUser = JSON.parse(user);
+        return parsedUser.name || "";
+      } catch {
+        return "";
+      }
+    }
+    return "";
+  });
   const navigate = useNavigate();
   const API_BASE_URL = `${
     import.meta.env.VITE_API_URL || "http://localhost:5000"
@@ -61,19 +72,6 @@ export default function Navbar({
     };
     fetchMyPostCount();
   }, [isPostFormOpen, API_BASE_URL]);
-
-  // Get user name from localStorage
-  useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) {
-      try {
-        const parsedUser = JSON.parse(user);
-        setUserName(parsedUser.name || "");
-      } catch {
-        // Error parsing user, silently ignore
-      }
-    }
-  }, []);
 
   // Listen for itemDeleted event to refresh post count
   useEffect(() => {

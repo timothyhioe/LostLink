@@ -132,7 +132,7 @@ export default function Home() {
     return () => {
       window.removeEventListener("itemPosted", handlePostSuccess);
     };
-  }, []);
+  }, [API_BASE_URL]);
 
   // Sync theme with localStorage when component mounts or window gains focus
   useEffect(() => {
