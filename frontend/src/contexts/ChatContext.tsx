@@ -144,6 +144,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 5,
       transports: ["websocket", "polling"],
+      upgrade: true,
+      rememberUpgrade: true,
+      forceNew: false,
+      autoConnect: true,
+      rejectUnauthorized: false,
     });
 
     newSocket.on("connect", () => {
