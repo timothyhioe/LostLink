@@ -1,0 +1,423 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - main
+    # triggers only on direct push to main, not on PRs
+  workflow_dispatch:
+    # manual triggering on deployment option
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH connection
+        run: |
+          if ! ssh -o StrictHostKeyChecking=yes -o ConnectTimeout=10 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'SSH connection successful'"; then
+            echo "ERROR: Failed to establish SSH connection to EC2 instance"
+            echo "Please verify:"
+            echo "  - EC2_SSH_PRIVATE_KEY secret is correct"
+            echo "  - EC2_HOST secret is correct (${{ secrets.EC2_HOST }})"
+            echo "  - EC2_USER secret is correct (${{ secrets.EC2_USER }})"
+            echo "  - EC2 instance is running and accessible"
+            echo "  - Security group allows SSH access from GitHub Actions IP"
+            exit 1
+          fi
+          echo "SSH connection successful"
+
+      - name: Deploy to EC2
+        id: deploy_backend
+        run: |
+          BACKEND_PATH="${{ secrets.EC2_BACKEND_PATH }}"
+          if [ -z "$BACKEND_PATH" ]; then
+            BACKEND_PATH="/var/www/lostlink"
+          fi
+
+          REPO_URL="${{ github.server_url }}/${{ github.repository }}.git"
+          CURRENT_BRANCH="${{ github.ref_name }}"
+
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash -s << EOF || DEPLOYMENT_FAILED=true
+            set -e  # Exit on any error
+            
+            BACKEND_PATH="$BACKEND_PATH"
+            REPO_URL="$REPO_URL"
+            CURRENT_BRANCH="$CURRENT_BRANCH"
+            GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            
+            # Create directory if it doesn't exist
+            mkdir -p "\$BACKEND_PATH"
+            cd "\$BACKEND_PATH"
+            
+            # Backup .env file if it exists
+            echo "Backing up .env file..."
+            if [ -f .env ]; then
+              cp .env .env.backup
+            else
+              echo "Warning: .env file not found, continuing..."
+            fi
+            
+            # Check if git is already initialized
+            if [ -d .git ]; then
+              echo "Git repository already exists"
+              
+              # Backup current commit hash
+              echo "Backing up current commit hash..."
+              if git rev-parse HEAD > .commit.backup 2>/dev/null; then
+                echo "Current commit: \$(cat .commit.backup)"
+              else
+                echo "Warning: Could not get current commit hash"
+              fi
+              
+              # Check if remote is set correctly
+              if ! git remote get-url origin > /dev/null 2>&1 || [ "\$(git remote get-url origin)" != "\$REPO_URL" ]; then
+                echo "Setting up git remote..."
+                git remote remove origin 2>/dev/null || true
+                git remote add origin "\$REPO_URL"
+              fi
+              
+              # Configure git for authentication
+              git config --local credential.helper store
+              echo "https://\$GITHUB_TOKEN@github.com" > ~/.git-credentials
+              
+              echo "Pulling latest code..."
+              if ! git pull origin "\$CURRENT_BRANCH"; then
+                echo "ERROR: Git pull failed"
+                echo "This could be due to:"
+                echo "  - Network connectivity issues"
+                echo "  - Authentication problems"
+                echo "  - Merge conflicts"
+                echo "  - Invalid branch name"
+                exit 1
+              fi
+            else
+              echo "Git repository not found. Initializing and cloning..."
+              
+              # Move existing files to temp location if directory has content
+              if [ "\$(ls -A . 2>/dev/null | grep -v '^\.env$' | grep -v '^\.env.backup$')" ]; then
+                echo "Backing up existing files..."
+                TEMP_BACKUP="\$(mktemp -d)"
+                find . -maxdepth 1 ! -name '.' ! -name '.env' ! -name '.env.backup' -exec mv {} "\$TEMP_BACKUP/" \;
+              fi
+              
+              # Initialize git and clone
+              cd ..
+              rm -rf "\$(basename \$BACKEND_PATH)"
+              
+              # Clone using token authentication
+              git clone --branch "\$CURRENT_BRANCH" "https://\$GITHUB_TOKEN@github.com/${{ github.repository }}.git" "\$(basename \$BACKEND_PATH)"
+              
+              cd "\$(basename \$BACKEND_PATH)"
+              
+              # Restore .env file if it was backed up
+              if [ -f ../.env.backup ]; then
+                cp ../.env.backup .env
+                echo ".env file restored"
+              fi
+              
+              # Backup current commit hash
+              echo "Backing up current commit hash..."
+              git rev-parse HEAD > .commit.backup
+              echo "Current commit: \$(cat .commit.backup)"
+            fi
+            
+            echo "Code updated successfully"
+            
+            echo "Restoring .env file..."
+            if [ -f .env.backup ]; then
+              cp .env.backup .env
+              echo ".env file restored"
+            else
+              echo "Warning: .env.backup not found"
+            fi
+            
+            echo "Installing dependencies..."
+            if ! npm ci --production=false; then
+              echo "ERROR: npm ci failed"
+              echo "This could be due to:"
+              echo "  - Corrupted node_modules"
+              echo "  - Network issues downloading packages"
+              echo "  - Invalid package.json or package-lock.json"
+              exit 1
+            fi
+            echo "Dependencies installed"
+            
+            echo "Building TypeScript..."
+            if ! npm run build; then
+              echo "ERROR: Build failed"
+              echo "This could be due to:"
+              echo "  - TypeScript compilation errors"
+              echo "  - Missing dependencies"
+              echo "  - Configuration issues"
+              exit 1
+            fi
+            echo "Build completed"
+            
+            # PM2 Process Management
+            PM2_PROCESS_NAME="lostlink-backend"
+            echo "Managing PM2 process: $PM2_PROCESS_NAME"
+            
+            # Check if PM2 process exists
+            if ! pm2 list | grep -q "$PM2_PROCESS_NAME"; then
+              echo "PM2 process '$PM2_PROCESS_NAME' not found. Starting new process..."
+              echo "Using start script: npm start (runs node dist/server.js)"
+              cd "\$BACKEND_PATH"
+              pm2 start npm --name "$PM2_PROCESS_NAME" -- start
+              if [ $? -ne 0 ]; then
+                echo "ERROR: Failed to start PM2 process"
+                echo "This could be due to:"
+                echo "  - Application startup errors"
+                echo "  - Port already in use"
+                echo "  - Missing dependencies or build artifacts"
+                exit 1
+              fi
+              echo "PM2 process started successfully"
+            else
+              echo "PM2 process found. Attempting zero-downtime reload..."
+              # Try reload first (zero-downtime)
+              if pm2 reload "$PM2_PROCESS_NAME"; then
+                echo "PM2 reload successful (zero-downtime)"
+              else
+                echo "PM2 reload failed, attempting restart as fallback..."
+                # Fallback to restart if reload fails
+                if pm2 restart "$PM2_PROCESS_NAME"; then
+                  echo "PM2 restart successful (fallback)"
+                else
+                  echo "ERROR: Both PM2 reload and restart failed"
+                  echo "This could be due to:"
+                  echo "  - Application startup errors"
+                  echo "  - Port already in use"
+                  echo "  - Process in inconsistent state"
+                  exit 1
+                fi
+              fi
+            fi
+            
+            # Verify PM2 process is running
+            echo "Verifying PM2 process status..."
+            sleep 2
+            if pm2 list | grep -q "$PM2_PROCESS_NAME.*online"; then
+              echo "PM2 process '$PM2_PROCESS_NAME' is online"
+            else
+              echo "WARNING: PM2 process status verification failed"
+              pm2 list
+              echo "Continuing deployment, but process may not be running correctly"
+            fi
+            
+            echo "Waiting for process to stabilize..."
+            sleep 10
+            
+            echo "Deployment completed successfully"
+          EOF
+
+          if [ "${DEPLOYMENT_FAILED:-false}" = "true" ]; then
+            echo "Deployment step failed - will trigger rollback"
+            exit 1
+          fi
+
+      - name: Health Check Verification
+        id: health_check
+        run: |
+          BACKEND_URL="${{ secrets.EC2_BACKEND_URL }}"
+          if [ -z "$BACKEND_URL" ]; then
+            echo "Error: EC2_BACKEND_URL secret is not set"
+            exit 1
+          fi
+
+          echo "Waiting for server to fully start..."
+          sleep 15
+
+          MAX_RETRIES=5
+          RETRY_DELAY=10
+          RETRY_COUNT=0
+          HEALTH_ENDPOINT="$BACKEND_URL/api/health"
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "Health check attempt $((RETRY_COUNT + 1))/$MAX_RETRIES..."
+            echo "Checking endpoint: $HEALTH_ENDPOINT"
+            
+            # Make request and capture both HTTP status code and response body
+            HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" "$HEALTH_ENDPOINT")
+            HTTP_BODY=$(echo "$HTTP_RESPONSE" | head -n -1)
+            HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 1)
+            
+            echo "HTTP Status: $HTTP_STATUS"
+            echo "Response Body: $HTTP_BODY"
+            
+            # Verify HTTP status is 200
+            if [ "$HTTP_STATUS" != "200" ]; then
+              echo "Health check failed: HTTP status is $HTTP_STATUS (expected 200)"
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                DELAY=$((RETRY_DELAY * (2 ** RETRY_COUNT)))
+                echo "Retrying in ${DELAY} seconds..."
+                sleep $DELAY
+              fi
+              continue
+            fi
+            
+            # Verify JSON response contains status: 'ok'
+            if echo "$HTTP_BODY" | grep -q '"status":"ok"'; then
+              echo "Health check passed!"
+              echo "Verified: HTTP 200 status and status === 'ok' in JSON response"
+              exit 0
+            else
+              echo "Health check failed: Response does not contain status === 'ok'"
+              echo "Expected: { status: 'ok', timestamp: '...' }"
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                DELAY=$((RETRY_DELAY * (2 ** RETRY_COUNT)))
+                echo "Retrying in ${DELAY} seconds..."
+                sleep $DELAY
+              fi
+            fi
+          done
+
+          echo "Health check failed after $MAX_RETRIES attempts"
+          echo "Endpoint: $HEALTH_ENDPOINT"
+          echo "Expected: HTTP 200 with JSON { status: 'ok', timestamp: '...' }"
+          exit 1
+
+      - name: Rollback on Deployment Failure
+        if: failure() && (steps.deploy_backend.outcome == 'failure')
+        run: |
+          BACKEND_PATH="${{ secrets.EC2_BACKEND_PATH }}"
+          if [ -z "$BACKEND_PATH" ]; then
+            BACKEND_PATH="/var/www/lostlink"
+          fi
+
+          echo "Deployment failed (git pull, build, or PM2 failure). Initiating rollback..."
+
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash -s << EOF
+            set -e  # Exit on any error in remote script
+            
+            BACKEND_PATH="$BACKEND_PATH"
+            cd "\$BACKEND_PATH" || { echo "ERROR: Backend directory not found at \$BACKEND_PATH"; exit 1; }
+            
+            echo "Restoring previous commit..."
+            if [ -f .commit.backup ]; then
+              PREVIOUS_COMMIT=\$(cat .commit.backup)
+              git reset --hard "\$PREVIOUS_COMMIT"
+              echo "Rolled back to commit: \$PREVIOUS_COMMIT"
+            else
+              echo "WARNING: .commit.backup not found, attempting to reset to HEAD~1"
+              git reset --hard HEAD~1 || { echo "ERROR: Could not reset to HEAD~1"; exit 1; }
+            fi
+            
+            echo "Restoring .env file from backup..."
+            if [ -f .env.backup ]; then
+              cp .env.backup .env
+              echo ".env file restored"
+            else
+              echo "WARNING: .env.backup not found"
+            fi
+            
+            echo "Rebuilding application..."
+            npm ci --production=false
+            npm run build
+            
+            # PM2 Process Management - Rollback
+            PM2_PROCESS_NAME="lostlink-backend"
+            echo "Restarting PM2 process: $PM2_PROCESS_NAME"
+            if pm2 restart "$PM2_PROCESS_NAME"; then
+              echo "PM2 process restarted successfully"
+              sleep 2
+              if pm2 list | grep -q "$PM2_PROCESS_NAME.*online"; then
+                echo "PM2 process '$PM2_PROCESS_NAME' is online after rollback"
+              else
+                echo "WARNING: PM2 process status verification failed after rollback"
+                pm2 list
+              fi
+            else
+              echo "ERROR: Failed to restart PM2 process during rollback"
+              exit 1
+            fi
+            
+            echo "Rollback completed successfully"
+          EOF
+
+          if [ $? -ne 0 ]; then
+            echo "Rollback failed - deployment is in an inconsistent state"
+            exit 1
+          else
+            echo "Rollback completed successfully, but deployment failed"
+            exit 1
+          fi
+
+      - name: Rollback on Health Check Failure
+        if: failure() && steps.health_check.outcome == 'failure' && steps.deploy_backend.outcome == 'success'
+        run: |
+          BACKEND_PATH="${{ secrets.EC2_BACKEND_PATH }}"
+          if [ -z "$BACKEND_PATH" ]; then
+            BACKEND_PATH="/var/www/lostlink"
+          fi
+
+          echo "Health check failed. Initiating rollback..."
+
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash -s << EOF
+            set -e  # Exit on any error in remote script
+            
+            BACKEND_PATH="$BACKEND_PATH"
+            cd "\$BACKEND_PATH" || { echo "Error: Backend directory not found at \$BACKEND_PATH"; exit 1; }
+            
+            echo "Restoring previous commit..."
+            if [ -f .commit.backup ]; then
+              PREVIOUS_COMMIT=\$(cat .commit.backup)
+              git reset --hard "\$PREVIOUS_COMMIT"
+              echo "Rolled back to commit: \$PREVIOUS_COMMIT"
+            else
+              echo "Warning: .commit.backup not found, attempting to reset to HEAD~1"
+              git reset --hard HEAD~1 || { echo "Error: Could not reset to HEAD~1"; exit 1; }
+            fi
+            
+            echo "Restoring .env file from backup..."
+            if [ -f .env.backup ]; then
+              cp .env.backup .env
+              echo ".env file restored"
+            else
+              echo "Warning: .env.backup not found"
+            fi
+            
+            echo "Rebuilding application..."
+            npm ci --production=false
+            npm run build
+            
+            # PM2 Process Management - Rollback
+            PM2_PROCESS_NAME="lostlink-backend"
+            echo "Restarting PM2 process: $PM2_PROCESS_NAME"
+            if pm2 restart "$PM2_PROCESS_NAME"; then
+              echo "PM2 process restarted successfully"
+              sleep 2
+              if pm2 list | grep -q "$PM2_PROCESS_NAME.*online"; then
+                echo "PM2 process '$PM2_PROCESS_NAME' is online after rollback"
+              else
+                echo "WARNING: PM2 process status verification failed after rollback"
+                pm2 list
+              fi
+            else
+              echo "ERROR: Failed to restart PM2 process during rollback"
+              exit 1
+            fi
+            
+            echo "Rollback completed successfully"
+          EOF
+
+          if [ $? -ne 0 ]; then
+            echo "Rollback failed - deployment is in an inconsistent state"
+            exit 1
+          else
+            echo "Rollback completed successfully, but deployment failed"
+            exit 1
+          fi
