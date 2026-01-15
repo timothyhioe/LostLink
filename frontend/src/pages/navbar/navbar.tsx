@@ -71,7 +71,7 @@ export default function Navbar({
       }
     };
     fetchMyPostCount();
-  }, [isPostFormOpen, API_BASE_URL]);
+  }, [isPostFormOpen]);
 
   // Listen for itemDeleted event to refresh post count
   useEffect(() => {
