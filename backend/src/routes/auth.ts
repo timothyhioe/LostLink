@@ -150,7 +150,7 @@ router.post("/register", async (req: Request, res: Response) => {
     logger.info("User registered", { userId: user.id, email: user.email });
 
     // Send verification email (non-blocking - don't fail registration if email fails)
-    sendEmail({
+    await sendEmail({
       to: normalizedEmail,
       subject: "LostLink Verification Code",
       text: `Your verification code is ${verificationCode}. It expires in 15 minutes.`,
