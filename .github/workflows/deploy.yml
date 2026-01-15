@@ -132,6 +132,9 @@ jobs:
             
             echo "Code updated successfully"
             
+            # Ensure we're in the backend directory before running npm commands
+            cd "\$BACKEND_PATH" || { echo "ERROR: Cannot change to BACKEND_PATH: \$BACKEND_PATH"; exit 1; }
+            
             echo "Restoring .env file..."
             if [ -f .env.backup ]; then
               cp .env.backup .env
@@ -141,6 +144,7 @@ jobs:
             fi
             
             echo "Installing dependencies..."
+            cd "\$BACKEND_PATH"
             if ! npm ci --production=false; then
               echo "ERROR: npm ci failed"
               echo "This could be due to:"
@@ -164,14 +168,14 @@ jobs:
             
             # PM2 Process Management
             PM2_PROCESS_NAME="lostlink-backend"
-            echo "Managing PM2 process: $PM2_PROCESS_NAME"
+            echo "Managing PM2 process: \$PM2_PROCESS_NAME"
             
             # Check if PM2 process exists
-            if ! pm2 list | grep -q "$PM2_PROCESS_NAME"; then
-              echo "PM2 process '$PM2_PROCESS_NAME' not found. Starting new process..."
+            if ! pm2 list | grep -q "\$PM2_PROCESS_NAME"; then
+              echo "PM2 process '\$PM2_PROCESS_NAME' not found. Starting new process..."
               echo "Using start script: npm start (runs node dist/server.js)"
               cd "\$BACKEND_PATH"
-              pm2 start npm --name "$PM2_PROCESS_NAME" -- start
+              pm2 start npm --name "\$PM2_PROCESS_NAME" -- start
               if [ $? -ne 0 ]; then
                 echo "ERROR: Failed to start PM2 process"
                 echo "This could be due to:"
@@ -184,12 +188,12 @@ jobs:
             else
               echo "PM2 process found. Attempting zero-downtime reload..."
               # Try reload first (zero-downtime)
-              if pm2 reload "$PM2_PROCESS_NAME"; then
+              if pm2 reload "\$PM2_PROCESS_NAME"; then
                 echo "PM2 reload successful (zero-downtime)"
               else
                 echo "PM2 reload failed, attempting restart as fallback..."
                 # Fallback to restart if reload fails
-                if pm2 restart "$PM2_PROCESS_NAME"; then
+                if pm2 restart "\$PM2_PROCESS_NAME"; then
                   echo "PM2 restart successful (fallback)"
                 else
                   echo "ERROR: Both PM2 reload and restart failed"
@@ -205,8 +209,8 @@ jobs:
             # Verify PM2 process is running
             echo "Verifying PM2 process status..."
             sleep 2
-            if pm2 list | grep -q "$PM2_PROCESS_NAME.*online"; then
-              echo "PM2 process '$PM2_PROCESS_NAME' is online"
+            if pm2 list | grep -q "\$PM2_PROCESS_NAME.*online"; then
+              echo "PM2 process '\$PM2_PROCESS_NAME' is online"
             else
               echo "WARNING: PM2 process status verification failed"
               pm2 list
@@ -365,18 +369,18 @@ jobs:
             fi
             
             echo "Rebuilding application..."
-            cd "\$BACKEND_PATH"
+            cd "\$BACKEND_PATH" || { echo "ERROR: Cannot change to BACKEND_PATH: \$BACKEND_PATH"; exit 1; }
             npm ci --production=false
             npm run build
             
             # PM2 Process Management - Rollback
             PM2_PROCESS_NAME="lostlink-backend"
-            echo "Restarting PM2 process: $PM2_PROCESS_NAME"
-            if pm2 restart "$PM2_PROCESS_NAME"; then
+            echo "Restarting PM2 process: \$PM2_PROCESS_NAME"
+            if pm2 restart "\$PM2_PROCESS_NAME"; then
               echo "PM2 process restarted successfully"
               sleep 2
-              if pm2 list | grep -q "$PM2_PROCESS_NAME.*online"; then
-                echo "PM2 process '$PM2_PROCESS_NAME' is online after rollback"
+              if pm2 list | grep -q "\$PM2_PROCESS_NAME.*online"; then
+                echo "PM2 process '\$PM2_PROCESS_NAME' is online after rollback"
               else
                 echo "WARNING: PM2 process status verification failed after rollback"
                 pm2 list
@@ -475,18 +479,18 @@ jobs:
             fi
             
             echo "Rebuilding application..."
-            cd "\$BACKEND_PATH"
+            cd "\$BACKEND_PATH" || { echo "ERROR: Cannot change to BACKEND_PATH: \$BACKEND_PATH"; exit 1; }
             npm ci --production=false
             npm run build
             
             # PM2 Process Management - Rollback
             PM2_PROCESS_NAME="lostlink-backend"
-            echo "Restarting PM2 process: $PM2_PROCESS_NAME"
-            if pm2 restart "$PM2_PROCESS_NAME"; then
+            echo "Restarting PM2 process: \$PM2_PROCESS_NAME"
+            if pm2 restart "\$PM2_PROCESS_NAME"; then
               echo "PM2 process restarted successfully"
               sleep 2
-              if pm2 list | grep -q "$PM2_PROCESS_NAME.*online"; then
-                echo "PM2 process '$PM2_PROCESS_NAME' is online after rollback"
+              if pm2 list | grep -q "\$PM2_PROCESS_NAME.*online"; then
+                echo "PM2 process '\$PM2_PROCESS_NAME' is online after rollback"
               else
                 echo "WARNING: PM2 process status verification failed after rollback"
                 pm2 list
