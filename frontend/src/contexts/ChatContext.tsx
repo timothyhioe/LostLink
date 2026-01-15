@@ -143,7 +143,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 5,
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"],
       upgrade: true,
       rememberUpgrade: true,
       forceNew: false,

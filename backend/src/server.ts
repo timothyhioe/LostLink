@@ -21,7 +21,7 @@ async function bootstrap(): Promise<void> {
       methods: ["GET", "POST"],
       allowedHeaders: ["Content-Type", "Authorization"],
     },
-    transports: ["websocket", "polling"],
+    transports: ["polling", "websocket"],
     pingInterval: 25000,
     pingTimeout: 60000,
     upgradeTimeout: 10000,
