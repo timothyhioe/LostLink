@@ -71,6 +71,17 @@ jobs:
           TEST_DATABASE_URL: postgresql://lostlink_test:test_password@localhost:5433/lostlink_test
         run: npm test
 
+      - name: Build
+        working-directory: ./backend
+        run: npm run build
+
+      - name: Verify build artifacts
+        working-directory: ./backend
+        run: |
+          test -d dist || (echo "ERROR: Build failed - dist directory not found" && exit 1)
+          test -f dist/server.js || (echo "ERROR: Build failed - dist/server.js not found" && exit 1)
+          echo "Build artifacts verified successfully"
+
       - name: Stop PostgreSQL
         if: always()
         run: |
@@ -107,5 +118,3 @@ jobs:
       - name: Build
         working-directory: ./frontend
         run: npm run build
-
-      #- name: Run tests #not yet implemented
