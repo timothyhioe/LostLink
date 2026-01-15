@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './myPosts.css'
 import Navbar from "../navbar"
+import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
 import locationLogo from "../../../assets/Home/location_logo.png"
 import dateLogo from "../../../assets/Home/date_logo.png"
 
@@ -52,6 +53,8 @@ export default function MyItems() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -168,12 +171,15 @@ export default function MyItems() {
   }
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) {
-      return
-    }
+    setItemToDelete(itemId)
+    setShowDeleteDialog(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return
 
     try {
-      setDeletingId(itemId)
+      setDeletingId(itemToDelete)
 
       const authToken = localStorage.getItem('authToken')
       if (!authToken) {
@@ -181,7 +187,7 @@ export default function MyItems() {
         return
       }
 
-      const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
+      const response = await fetch(`${API_BASE_URL}/items/${itemToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -193,19 +199,27 @@ export default function MyItems() {
       }
 
       // Remove item from state
-      const updatedItems = items.filter(item => item.id !== itemId)
+      const updatedItems = items.filter(item => item.id !== itemToDelete)
       setItems(updatedItems)
       setPostLimitReached(updatedItems.length >= 10)
 
       // Dispatch event to notify navbar of deletion
       window.dispatchEvent(new Event('itemDeleted'))
+      
+      setShowDeleteDialog(false)
+      setItemToDelete(null)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred'
       setError(message)
       console.error('Error deleting item:', err)
-    } finally {
       setDeletingId(null)
     }
+  }
+
+  const handleCancelDelete = () => {
+    setShowDeleteDialog(false)
+    setItemToDelete(null)
+    setDeletingId(null)
   }
 
   return (
@@ -283,6 +297,18 @@ export default function MyItems() {
           ))
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title="Delete Item"
+        message="Are you sure you want to delete this item? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDarkMode={isDarkMode}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        isLoading={deletingId !== null}
+      />
     </div>
   )
 }

@@ -36,6 +36,7 @@ export default function Navbar({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [postLimitReached, setPostLimitReached] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userName, setUserName] = useState<string>("");
   const navigate = useNavigate();
   const API_BASE_URL = `${
     import.meta.env.VITE_API_URL || "http://localhost:5000"
@@ -60,6 +61,19 @@ export default function Navbar({
     };
     fetchMyPostCount();
   }, [isPostFormOpen, API_BASE_URL]);
+
+  // Get user name from localStorage
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (user) {
+      try {
+        const parsedUser = JSON.parse(user);
+        setUserName(parsedUser.name || "");
+      } catch {
+        // Error parsing user, silently ignore
+      }
+    }
+  }, []);
 
   // Listen for itemDeleted event to refresh post count
   useEffect(() => {
@@ -286,6 +300,7 @@ export default function Navbar({
                   src={isDarkMode ? profileIconWhite : profileIcon}
                   alt="Profile"
                 />
+                <span className="navbar-profile-name">{userName}</span>
               </button>
               {isProfileDropdownOpen && (
                 <div
@@ -331,13 +346,23 @@ export default function Navbar({
         }`}
       >
         <div className="navbar-mobile-content">
-          {/* Close button */}
+          {/* Profile Header */}
+          <div className="navbar-profile-section">
+            <div className="navbar-profile-header">
+              <img
+                src={isDarkMode ? profileIconWhite : profileIcon}
+                alt="Profile"
+              />
+              <span className="navbar-mobile-username">{userName}</span>
+            </div>
+          </div>
 
+          {/* Menu Items */}
           <button
             className="navbar-post-button navbar-mobile-item"
             onClick={handlePostClick}
           >
-            Post
+            Post Item
           </button>
           <button
             className="navbar-mobile-item"
@@ -394,14 +419,10 @@ export default function Navbar({
             Messages
           </button>
           <button
-            className="navbar-profile-btn navbar-mobile-item"
-            title="Profile"
+            className="navbar-mobile-item navbar-my-posts-item"
             onClick={handleMyPostsClick}
+            title="My Posts"
           >
-            <img
-              src={isDarkMode ? profileIconWhite : profileIcon}
-              alt="Profile"
-            />{" "}
             My Posts
           </button>
           <button

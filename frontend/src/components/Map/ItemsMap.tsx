@@ -167,7 +167,9 @@ export function ItemsMap({
     (item: MapItem) => {
       const imageUrl =
         item.images && item.images.length > 0
-          ? `${BASE_URL}${item.images[0].url}`
+          ? item.images[0].url.startsWith("http://") || item.images[0].url.startsWith("https://")
+            ? item.images[0].url
+            : `${BASE_URL}${item.images[0].url}`
           : null;
       const formattedDate = new Date(item.createdAt).toLocaleDateString(
         "de-DE",
@@ -241,7 +243,9 @@ export function ItemsMap({
               .map((item) => {
                 const imageUrl =
                   item.images && item.images.length > 0
-                    ? `${BASE_URL}${item.images[0].url}`
+                    ? item.images[0].url.startsWith("http://") || item.images[0].url.startsWith("https://")
+                      ? item.images[0].url
+                      : `${BASE_URL}${item.images[0].url}`
                     : null;
                 const formattedDate = new Date(
                   item.createdAt
