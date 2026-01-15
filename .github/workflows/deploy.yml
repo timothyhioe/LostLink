@@ -13,44 +13,59 @@ jobs:
     name: Check CI Status
     runs-on: ubuntu-latest
     steps:
-      - name: Check CI workflow status
+      - name: Wait for CI workflow to complete
         uses: actions/github-script@v7
         with:
           script: |
-            const { data: runs } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci.yml',
-              branch: 'main',
-              per_page: 1
-            });
-
-            if (runs.workflow_runs.length === 0) {
-              core.setFailed('No CI workflow runs found');
-              return;
-            }
-
-            const latestRun = runs.workflow_runs[0];
             const commitSha = context.sha;
+            const maxWaitTime = 10 * 60 * 1000; // 10 minutes
+            const checkInterval = 10 * 1000; // 10 seconds
+            const startTime = Date.now();
 
-            // Check if there's a CI run for this commit
-            const runForCommit = runs.workflow_runs.find(run => run.head_sha === commitSha);
+            console.log(`Waiting for CI workflow to complete for commit ${commitSha}...`);
 
-            if (!runForCommit) {
-              console.log('No CI run found for this commit. Checking latest run...');
-              const latestCommitRun = runs.workflow_runs[0];
-              if (latestCommitRun.conclusion !== 'success') {
-                core.setFailed(`Latest CI run (${latestCommitRun.conclusion}) did not pass. Cannot deploy.`);
+            while (Date.now() - startTime < maxWaitTime) {
+              const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'ci.yml',
+                branch: 'main',
+                per_page: 10
+              });
+              
+              // Find CI run for this commit
+              const runForCommit = runs.workflow_runs.find(run => run.head_sha === commitSha);
+              
+              if (!runForCommit) {
+                console.log('CI workflow run not found yet. Waiting...');
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+                continue;
+              }
+              
+              console.log(`CI workflow status: ${runForCommit.status}, conclusion: ${runForCommit.conclusion || 'pending'}`);
+              
+              // If CI is still running, wait
+              if (runForCommit.status === 'in_progress' || runForCommit.status === 'queued') {
+                console.log('CI workflow is still running. Waiting...');
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+                continue;
+              }
+              
+              // CI has completed
+              if (runForCommit.conclusion === 'success') {
+                console.log('CI workflow passed! Proceeding with deployment.');
+                return;
+              } else if (runForCommit.conclusion === 'failure' || runForCommit.conclusion === 'cancelled') {
+                core.setFailed(`CI workflow ${runForCommit.conclusion}. Cannot deploy.`);
+                return;
+              } else {
+                core.setFailed(`CI workflow completed with unexpected status: ${runForCommit.conclusion}. Cannot deploy.`);
                 return;
               }
-              console.log('Latest CI run passed. Proceeding with deployment.');
-            } else {
-              if (runForCommit.conclusion !== 'success') {
-                core.setFailed(`CI run for this commit (${runForCommit.conclusion}) did not pass. Cannot deploy.`);
-                return;
-              }
-              console.log('CI run for this commit passed. Proceeding with deployment.');
             }
+
+            // Timeout
+            core.setFailed('Timeout waiting for CI workflow to complete. Cannot deploy.');
 
   deploy-backend:
     name: Deploy Backend to EC2
