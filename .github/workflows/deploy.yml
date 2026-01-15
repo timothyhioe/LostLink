@@ -56,8 +56,9 @@ jobs:
             REPO_URL="$REPO_URL"
             CURRENT_BRANCH="$CURRENT_BRANCH"
             GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            TEMP_REPO_DIR="/tmp/lostlink-repo-\$\$"
             
-            # Create directory if it doesn't exist
+            # Create backend directory if it doesn't exist
             mkdir -p "\$BACKEND_PATH"
             cd "\$BACKEND_PATH"
             
@@ -69,85 +70,65 @@ jobs:
               echo "Warning: .env file not found, continuing..."
             fi
             
-            # Check if git is already initialized
-            if [ -d .git ]; then
-              echo "Git repository already exists"
-              
-              # Backup current commit hash
-              echo "Backing up current commit hash..."
-              if git rev-parse HEAD > .commit.backup 2>/dev/null; then
-                echo "Current commit: \$(cat .commit.backup)"
-              else
-                echo "Warning: Could not get current commit hash"
-              fi
-              
-              # Check if remote is set correctly
-              if ! git remote get-url origin > /dev/null 2>&1 || [ "\$(git remote get-url origin)" != "\$REPO_URL" ]; then
-                echo "Setting up git remote..."
-                git remote remove origin 2>/dev/null || true
-                git remote add origin "\$REPO_URL"
-              fi
-              
-              # Configure git for authentication
-              git config --local credential.helper store
-              echo "https://\$GITHUB_TOKEN@github.com" > ~/.git-credentials
-              
-              echo "Pulling latest code..."
-              if ! git pull origin "\$CURRENT_BRANCH"; then
-                echo "ERROR: Git pull failed"
-                echo "This could be due to:"
-                echo "  - Network connectivity issues"
-                echo "  - Authentication problems"
-                echo "  - Merge conflicts"
-                echo "  - Invalid branch name"
-                exit 1
-              fi
-            else
-              echo "Git repository not found. Initializing git in existing directory..."
-              
-              # Preserve .env.backup before git operations (git reset will remove it)
-              if [ -f .env.backup ]; then
-                cp .env.backup ../.env.backup.tmp
-                echo "Preserved .env.backup before git operations"
-              fi
-              
-              # Initialize git in the current directory
-              git init
-              git remote add origin "\$REPO_URL" || git remote set-url origin "\$REPO_URL"
-              
-              # Configure git for authentication
-              git config --local credential.helper store
-              echo "https://\$GITHUB_TOKEN@github.com" > ~/.git-credentials
-              
-              # Fetch and merge from remote
-              echo "Fetching from remote repository..."
-              git fetch origin "\$CURRENT_BRANCH"
-              git branch -M "\$CURRENT_BRANCH" || true
-              
-              # Reset to match remote (this will overwrite local files)
-              if git reset --hard "origin/\$CURRENT_BRANCH"; then
-                echo "Repository synced with remote"
-              else
-                echo "ERROR: Failed to sync with remote repository"
-                echo "This could be due to:"
-                echo "  - Authentication problems"
-                echo "  - Network connectivity issues"
-                echo "  - Invalid branch name"
-                exit 1
-              fi
-              
-              # Restore .env.backup after git reset
-              if [ -f ../.env.backup.tmp ]; then
-                cp ../.env.backup.tmp .env.backup
-                rm ../.env.backup.tmp
-                echo "Restored .env.backup after git operations"
-              fi
-              
-              # Backup current commit hash
-              echo "Backing up current commit hash..."
-              git rev-parse HEAD > .commit.backup
-              echo "Current commit: \$(cat .commit.backup)"
+            # Backup current commit hash if .git exists (for rollback)
+            if [ -f .commit.backup ]; then
+              PREVIOUS_COMMIT=\$(cat .commit.backup)
+              echo "Previous commit: \$PREVIOUS_COMMIT"
             fi
+            
+            # Clone repository to temporary location
+            echo "Cloning repository to temporary location..."
+            rm -rf "\$TEMP_REPO_DIR"
+            mkdir -p "\$TEMP_REPO_DIR"
+            
+            # Configure git for authentication
+            git config --global credential.helper store
+            echo "https://\$GITHUB_TOKEN@github.com" > ~/.git-credentials
+            
+            # Clone the repository
+            if git clone --branch "\$CURRENT_BRANCH" "\$REPO_URL" "\$TEMP_REPO_DIR"; then
+              echo "Repository cloned successfully"
+            else
+              echo "ERROR: Failed to clone repository"
+              echo "This could be due to:"
+              echo "  - Authentication problems"
+              echo "  - Network connectivity issues"
+              echo "  - Invalid branch name"
+              exit 1
+            fi
+            
+            # Get current commit hash for rollback
+            cd "\$TEMP_REPO_DIR"
+            CURRENT_COMMIT=\$(git rev-parse HEAD)
+            echo "Current commit: \$CURRENT_COMMIT"
+            echo "\$CURRENT_COMMIT" > "\$BACKEND_PATH/.commit.backup"
+            
+            # Clean up existing files in deployment directory (except .env, backups, and node_modules)
+            echo "Cleaning up existing files in deployment directory..."
+            cd "\$BACKEND_PATH"
+            find . -mindepth 1 -maxdepth 1 ! -name '.env' ! -name '.env.backup' ! -name '.commit.backup' ! -name 'node_modules' -exec rm -rf {} \;
+            echo "Existing files cleaned (preserved .env, .env.backup, .commit.backup, node_modules)"
+            
+            # Copy backend folder contents to deployment directory
+            echo "Copying backend folder contents to deployment directory..."
+            if [ -d "\$TEMP_REPO_DIR/backend" ]; then
+              # Copy all files from backend/ to BACKEND_PATH, preserving .env
+              cd "\$TEMP_REPO_DIR/backend"
+              if command -v rsync > /dev/null 2>&1; then
+                rsync -av --exclude='.env' --exclude='.env.backup' --exclude='node_modules' . "\$BACKEND_PATH/"
+              else
+                # Fallback to cp if rsync is not available
+                find . -type f ! -name '.env' ! -name '.env.backup' ! -path '*/node_modules/*' -exec cp --parents {} "\$BACKEND_PATH/" \;
+                find . -type d ! -name 'node_modules' -exec mkdir -p "\$BACKEND_PATH/{}" \;
+              fi
+              echo "Backend files copied successfully"
+            else
+              echo "ERROR: backend folder not found in repository"
+              exit 1
+            fi
+            
+            # Clean up temporary repository
+            rm -rf "\$TEMP_REPO_DIR"
             
             echo "Code updated successfully"
             
@@ -320,17 +301,60 @@ jobs:
             set -e  # Exit on any error in remote script
             
             BACKEND_PATH="$BACKEND_PATH"
+            REPO_URL="${{ github.server_url }}/${{ github.repository }}.git"
+            GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            TEMP_REPO_DIR="/tmp/lostlink-rollback-\$\$"
+            
             cd "\$BACKEND_PATH" || { echo "ERROR: Backend directory not found at \$BACKEND_PATH"; exit 1; }
             
             echo "Restoring previous commit..."
             if [ -f .commit.backup ]; then
               PREVIOUS_COMMIT=\$(cat .commit.backup)
-              git reset --hard "\$PREVIOUS_COMMIT"
-              echo "Rolled back to commit: \$PREVIOUS_COMMIT"
+              echo "Rolling back to commit: \$PREVIOUS_COMMIT"
             else
-              echo "WARNING: .commit.backup not found, attempting to reset to HEAD~1"
-              git reset --hard HEAD~1 || { echo "ERROR: Could not reset to HEAD~1"; exit 1; }
+              echo "WARNING: .commit.backup not found, cannot rollback to specific commit"
+              echo "ERROR: Rollback requires .commit.backup file"
+              exit 1
             fi
+            
+            # Clone repository to temporary location for rollback
+            echo "Cloning repository for rollback..."
+            rm -rf "\$TEMP_REPO_DIR"
+            mkdir -p "\$TEMP_REPO_DIR"
+            
+            # Configure git for authentication
+            git config --global credential.helper store
+            echo "https://\$GITHUB_TOKEN@github.com" > ~/.git-credentials
+            
+            # Clone and checkout previous commit
+            if git clone "\$REPO_URL" "\$TEMP_REPO_DIR"; then
+              cd "\$TEMP_REPO_DIR"
+              git checkout "\$PREVIOUS_COMMIT"
+              echo "Checked out previous commit: \$PREVIOUS_COMMIT"
+            else
+              echo "ERROR: Failed to clone repository for rollback"
+              exit 1
+            fi
+            
+            # Copy backend folder contents from previous commit
+            echo "Copying backend folder contents from previous commit..."
+            if [ -d "\$TEMP_REPO_DIR/backend" ]; then
+              cd "\$TEMP_REPO_DIR/backend"
+              if command -v rsync > /dev/null 2>&1; then
+                rsync -av --exclude='.env' --exclude='.env.backup' --exclude='node_modules' . "\$BACKEND_PATH/"
+              else
+                # Fallback to cp if rsync is not available
+                find . -type f ! -name '.env' ! -name '.env.backup' ! -path '*/node_modules/*' -exec cp --parents {} "\$BACKEND_PATH/" \;
+                find . -type d ! -name 'node_modules' -exec mkdir -p "\$BACKEND_PATH/{}" \;
+              fi
+              echo "Backend files from previous commit copied successfully"
+            else
+              echo "ERROR: backend folder not found in repository"
+              exit 1
+            fi
+            
+            # Clean up temporary repository
+            rm -rf "\$TEMP_REPO_DIR"
             
             echo "Restoring .env file from backup..."
             if [ -f .env.backup ]; then
@@ -341,6 +365,7 @@ jobs:
             fi
             
             echo "Rebuilding application..."
+            cd "\$BACKEND_PATH"
             npm ci --production=false
             npm run build
             
@@ -386,17 +411,60 @@ jobs:
             set -e  # Exit on any error in remote script
             
             BACKEND_PATH="$BACKEND_PATH"
+            REPO_URL="${{ github.server_url }}/${{ github.repository }}.git"
+            GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            TEMP_REPO_DIR="/tmp/lostlink-rollback-\$\$"
+            
             cd "\$BACKEND_PATH" || { echo "Error: Backend directory not found at \$BACKEND_PATH"; exit 1; }
             
             echo "Restoring previous commit..."
             if [ -f .commit.backup ]; then
               PREVIOUS_COMMIT=\$(cat .commit.backup)
-              git reset --hard "\$PREVIOUS_COMMIT"
-              echo "Rolled back to commit: \$PREVIOUS_COMMIT"
+              echo "Rolling back to commit: \$PREVIOUS_COMMIT"
             else
-              echo "Warning: .commit.backup not found, attempting to reset to HEAD~1"
-              git reset --hard HEAD~1 || { echo "Error: Could not reset to HEAD~1"; exit 1; }
+              echo "WARNING: .commit.backup not found, cannot rollback to specific commit"
+              echo "ERROR: Rollback requires .commit.backup file"
+              exit 1
             fi
+            
+            # Clone repository to temporary location for rollback
+            echo "Cloning repository for rollback..."
+            rm -rf "\$TEMP_REPO_DIR"
+            mkdir -p "\$TEMP_REPO_DIR"
+            
+            # Configure git for authentication
+            git config --global credential.helper store
+            echo "https://\$GITHUB_TOKEN@github.com" > ~/.git-credentials
+            
+            # Clone and checkout previous commit
+            if git clone "\$REPO_URL" "\$TEMP_REPO_DIR"; then
+              cd "\$TEMP_REPO_DIR"
+              git checkout "\$PREVIOUS_COMMIT"
+              echo "Checked out previous commit: \$PREVIOUS_COMMIT"
+            else
+              echo "ERROR: Failed to clone repository for rollback"
+              exit 1
+            fi
+            
+            # Copy backend folder contents from previous commit
+            echo "Copying backend folder contents from previous commit..."
+            if [ -d "\$TEMP_REPO_DIR/backend" ]; then
+              cd "\$TEMP_REPO_DIR/backend"
+              if command -v rsync > /dev/null 2>&1; then
+                rsync -av --exclude='.env' --exclude='.env.backup' --exclude='node_modules' . "\$BACKEND_PATH/"
+              else
+                # Fallback to cp if rsync is not available
+                find . -type f ! -name '.env' ! -name '.env.backup' ! -path '*/node_modules/*' -exec cp --parents {} "\$BACKEND_PATH/" \;
+                find . -type d ! -name 'node_modules' -exec mkdir -p "\$BACKEND_PATH/{}" \;
+              fi
+              echo "Backend files from previous commit copied successfully"
+            else
+              echo "ERROR: backend folder not found in repository"
+              exit 1
+            fi
+            
+            # Clean up temporary repository
+            rm -rf "\$TEMP_REPO_DIR"
             
             echo "Restoring .env file from backup..."
             if [ -f .env.backup ]; then
@@ -407,6 +475,7 @@ jobs:
             fi
             
             echo "Rebuilding application..."
+            cd "\$BACKEND_PATH"
             npm ci --production=false
             npm run build
             
