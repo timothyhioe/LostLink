@@ -61,7 +61,7 @@ export default function Home() {
     null
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
-
+  // re push to fix vercel repository view error
   // Fetch items from backend
   const fetchItems = async () => {
     try {

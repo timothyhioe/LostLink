@@ -18,7 +18,14 @@ async function bootstrap(): Promise<void> {
     cors: {
       origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN.split(","),
       credentials: true,
+      methods: ["GET", "POST"],
+      allowedHeaders: ["Content-Type", "Authorization"],
     },
+    transports: ["websocket", "polling"],
+    pingInterval: 25000,
+    pingTimeout: 60000,
+    upgradeTimeout: 10000,
+    allowEIO3: true,
   });
 
   registerChatGateway(io);
