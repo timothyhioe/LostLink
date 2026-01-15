@@ -103,28 +103,44 @@ jobs:
                 exit 1
               fi
             else
-              echo "Git repository not found. Initializing and cloning..."
+              echo "Git repository not found. Initializing git in existing directory..."
               
-              # Move existing files to temp location if directory has content
-              if [ "\$(ls -A . 2>/dev/null | grep -v '^\.env$' | grep -v '^\.env.backup$')" ]; then
-                echo "Backing up existing files..."
-                TEMP_BACKUP="\$(mktemp -d)"
-                find . -maxdepth 1 ! -name '.' ! -name '.env' ! -name '.env.backup' -exec mv {} "\$TEMP_BACKUP/" \;
+              # Preserve .env.backup before git operations (git reset will remove it)
+              if [ -f .env.backup ]; then
+                cp .env.backup ../.env.backup.tmp
+                echo "Preserved .env.backup before git operations"
               fi
               
-              # Initialize git and clone
-              cd ..
-              rm -rf "\$(basename \$BACKEND_PATH)"
+              # Initialize git in the current directory
+              git init
+              git remote add origin "\$REPO_URL" || git remote set-url origin "\$REPO_URL"
               
-              # Clone using token authentication
-              git clone --branch "\$CURRENT_BRANCH" "https://\$GITHUB_TOKEN@github.com/${{ github.repository }}.git" "\$(basename \$BACKEND_PATH)"
+              # Configure git for authentication
+              git config --local credential.helper store
+              echo "https://\$GITHUB_TOKEN@github.com" > ~/.git-credentials
               
-              cd "\$(basename \$BACKEND_PATH)"
+              # Fetch and merge from remote
+              echo "Fetching from remote repository..."
+              git fetch origin "\$CURRENT_BRANCH"
+              git branch -M "\$CURRENT_BRANCH" || true
               
-              # Restore .env file if it was backed up
-              if [ -f ../.env.backup ]; then
-                cp ../.env.backup .env
-                echo ".env file restored"
+              # Reset to match remote (this will overwrite local files)
+              if git reset --hard "origin/\$CURRENT_BRANCH"; then
+                echo "Repository synced with remote"
+              else
+                echo "ERROR: Failed to sync with remote repository"
+                echo "This could be due to:"
+                echo "  - Authentication problems"
+                echo "  - Network connectivity issues"
+                echo "  - Invalid branch name"
+                exit 1
+              fi
+              
+              # Restore .env.backup after git reset
+              if [ -f ../.env.backup.tmp ]; then
+                cp ../.env.backup.tmp .env.backup
+                rm ../.env.backup.tmp
+                echo "Restored .env.backup after git operations"
               fi
               
               # Backup current commit hash
