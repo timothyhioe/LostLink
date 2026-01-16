@@ -174,11 +174,9 @@ export default function MyItems() {
   const handleResolveItem = async (itemId: string) => {
     try {
       setResolvingId(itemId)
-      setResolveError(null)
 
       const authToken = localStorage.getItem('authToken')
       if (!authToken) {
-        setResolveError('Authentication required')
         setResolvingId(null)
         return
       }
@@ -206,7 +204,6 @@ export default function MyItems() {
       }, 1000)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred'
-      setResolveError(message)
       console.error('Error resolving item:', err)
       setResolvingId(null)
     }
