@@ -131,7 +131,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           const filteredConversations = data.conversations.filter(
             (conv: ChatConversation) => conv.userId !== userId
           ).map((dbConv: ChatConversation) => {
-            const localConv = localStorageConvs.find((c: any) => c.userId === dbConv.userId);
+            const localConv = localStorageConvs.find((c: ChatConversation) => c.userId === dbConv.userId);
             return {
               ...dbConv,
               itemId: localConv?.itemId,

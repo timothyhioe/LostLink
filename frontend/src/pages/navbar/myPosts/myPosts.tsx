@@ -56,7 +56,6 @@ export default function MyItems() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | null>(null)
   const [resolvingId, setResolvingId] = useState<string | null>(null)
-  const [resolveError, setResolveError] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
