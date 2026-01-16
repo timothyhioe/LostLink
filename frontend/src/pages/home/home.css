@@ -111,6 +111,11 @@
   border-color: var(--color-status-red);
 }
 
+.home-filter-btn-resolved.active {
+  background-color: #22c55e;
+  border-color: #22c55e;
+}
+
 .home-page.dark-mode .home-filter-btn.active {
   background-color: var(--color-primary);
   color: white;
@@ -275,6 +280,11 @@
 
 .home-item-type-label.found {
   background-color: var(--color-status-blue);
+  color: white;
+}
+
+.home-item-type-label.resolved {
+  background-color: #22c55e;
   color: white;
 }
 

@@ -12,6 +12,8 @@ interface ChatMessage {
   content: string
   timestamp: string
   read: boolean
+  itemId?: string
+  itemTitle?: string
 }
 
 // Store active connections
@@ -67,11 +69,12 @@ async function loadChatHistory(userId1: string, userId2: string): Promise<ChatMe
 // Save message to database
 async function saveMessageToDatabase(message: ChatMessage): Promise<void> {
   try {
-    logger.info(`[Chat] Attempting to save message: senderId=${message.senderId}, recipientId=${message.recipientId}, content="${message.content.substring(0, 50)}"`)
+    logger.info(`[Chat] Attempting to save message: senderId=${message.senderId}, recipientId=${message.recipientId}, content="${message.content.substring(0, 50)}", itemId=${message.itemId || 'none'}`)
     
     const result = await db.insert(chatMessages).values({
       senderId: message.senderId,
       recipientId: message.recipientId,
+      itemId: message.itemId || null,
       content: message.content,
       read: message.read,
       createdAt: new Date(message.timestamp),
@@ -139,10 +142,12 @@ export function registerChatGateway(io: Server): void {
       recipientId: string;
       content: string;
       timestamp: string;
+      itemId?: string;
+      itemTitle?: string;
     }) => {
-      const { senderId, senderName, recipientId, content, timestamp } = data
+      const { senderId, senderName, recipientId, content, timestamp, itemId, itemTitle } = data
 
-      logger.info(`[SOCKET.IO] send_message event - from: ${senderId}, to: ${recipientId}, content: "${content}"`)
+      logger.info(`[SOCKET.IO] send_message event - from: ${senderId}, to: ${recipientId}, content: "${content}", itemId: ${itemId || 'none'}`)
 
       // Prevent self-messages
       if (senderId === recipientId) {
@@ -166,7 +171,9 @@ export function registerChatGateway(io: Server): void {
         recipientId,
         content,
         timestamp,
-        read: false
+        read: false,
+        ...(itemId && { itemId }),
+        ...(itemTitle && { itemTitle })
       }
 
       // Save message to database
@@ -186,6 +193,8 @@ export function registerChatGateway(io: Server): void {
           senderId,
           senderName,
           content,
+          itemId,
+          itemTitle,
           message
         })
       }

@@ -71,7 +71,7 @@ export default function Navbar({
       }
     };
     fetchMyPostCount();
-  }, [isPostFormOpen]);
+  }, [isPostFormOpen, API_BASE_URL]);
 
   // Listen for itemDeleted event to refresh post count
   useEffect(() => {
@@ -95,7 +95,7 @@ export default function Navbar({
     };
     window.addEventListener("itemDeleted", handleItemDeleted);
     return () => window.removeEventListener("itemDeleted", handleItemDeleted);
-  }, []);
+  }, [API_BASE_URL]);
 
   // Calculate total unread notifications
   const unreadCount = Object.keys(unreadNotifications).length;

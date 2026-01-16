@@ -46,10 +46,22 @@
   border-radius: 12px 12px 0 0;
 }
 
+.chat-modal-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .chat-modal-header h3 {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
+}
+
+.chat-modal-item-title {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.9;
 }
 
 .chat-modal-close {
@@ -179,6 +191,76 @@
 
 .chat-send-button:active {
   transform: translateY(0);
+}
+
+.chat-resolve-section {
+  padding: 12px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-resolve-button {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.chat-resolve-button:hover:not(:disabled) {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.chat-resolve-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.chat-resolve-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.resolve-success-message {
+  padding: 12px 16px;
+  background-color: #c8e6c9;
+  color: #2e7d32;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  animation: slideDown 0.3s ease-out;
+}
+
+.resolve-error-message {
+  padding: 8px 12px;
+  background-color: #ffcdd2;
+  color: #c62828;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Dark mode support */

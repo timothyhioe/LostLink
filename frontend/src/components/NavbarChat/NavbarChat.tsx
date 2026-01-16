@@ -11,6 +11,9 @@ interface NavbarChatProps {
 export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatProps) {
   const { messages, sendMessage, joinChat, leaveChat, getCurrentUserId, conversations, selectedConversationId, setSelectedConversation, deleteConversation } = useChat()
   const [messageContent, setMessageContent] = useState('')
+  const [isResolving, setIsResolving] = useState(false)
+  const [resolveError, setResolveError] = useState('')
+  const [isResolved, setIsResolved] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const currentUserId = getCurrentUserId()
   const currentRoomRef = useRef<string | null>(null)
@@ -19,7 +22,7 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
   const selectedConversation = useMemo(() => {
     if (!selectedConversationId) return null
     const conv = conversations.find(c => c.userId === selectedConversationId)
-    return conv ? { userId: selectedConversationId, userName: conv.userName } : null
+    return conv ? { userId: selectedConversationId, userName: conv.userName, itemId: conv.itemId, itemTitle: conv.itemTitle } : null
   }, [selectedConversationId, conversations])
 
   useEffect(() => {
@@ -44,6 +47,13 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
   }, [messages])
+
+  // Reset resolve state when switching conversations
+  useEffect(() => {
+    setIsResolved(false)
+    setResolveError('')
+    setIsResolving(false)
+  }, [selectedConversationId])
 
   const handleSendMessage = () => {
     if (messageContent.trim() && selectedConversation?.userId) {
@@ -80,9 +90,76 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
   const handleDeleteConversation = () => {
     if (selectedConversation?.userId) {
       if (confirm(`Delete conversation with ${selectedConversation.userName}?`)) {
+        console.log('[NavbarChat] Deleting conversation with:', {
+          userId: selectedConversation.userId,
+          userName: selectedConversation.userName
+        });
         deleteConversation(selectedConversation.userId)
         handleBackClick()
       }
+    }
+  }
+
+  const handleResolveItem = async () => {
+    // Log the current state
+    console.log('[NavbarChat] handleResolveItem called', {
+      selectedConversationId,
+      selectedConversation,
+      conversations
+    })
+
+    // Check if we have item info from the conversation
+    if (!selectedConversation?.itemId) {
+      console.error('[NavbarChat] Missing itemId:', {
+        selectedConversation,
+        itemId: selectedConversation?.itemId
+      })
+      setResolveError('To mark items as resolved, start the chat from an item page. Item linking coming soon!')
+      return
+    }
+
+    setIsResolving(true)
+    setResolveError('')
+
+    try {
+      const token = localStorage.getItem('authToken')
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+      console.log('[NavbarChat] Resolving item:', {
+        itemId: selectedConversation.itemId,
+        itemTitle: selectedConversation.itemTitle,
+        apiUrl,
+        token: token ? 'Present' : 'Missing'
+      })
+
+      const response = await fetch(`${apiUrl}/api/items/${selectedConversation.itemId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'resolved' }),
+      })
+
+      console.log('[NavbarChat] API response status:', response.status)
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to resolve item')
+      }
+
+      setIsResolved(true)
+      console.log('[NavbarChat] Item resolved successfully')
+      // Auto close and refresh after 2 seconds
+      setTimeout(() => {
+        handleBackClick()
+        // Refresh the page to show updated resolved status
+        window.location.reload()
+      }, 2000)
+    } catch (error) {
+      console.error('[NavbarChat] Error resolving item:', error)
+      setResolveError(error instanceof Error ? error.message : 'Failed to resolve item')
+      setIsResolving(false)
     }
   }
 
@@ -131,21 +208,40 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
             {selectedConversation ? (
               <div className={`navbar-chat-window ${selectedConversation ? 'active' : ''}`}>
                 <div className="navbar-chat-window-header">
-                  <button 
-                    className="navbar-chat-back-btn"
-                    onClick={() => setSelectedConversation(null)}
-                    title="Back to conversations"
-                  >
-                    ← Back
-                  </button>
-                  <h4>{selectedConversation.userName}</h4>
-                  <button 
-                    className="navbar-chat-delete-btn"
-                    onClick={handleDeleteConversation}
-                    title="Delete conversation"
-                  >
-                    Delete Chat
-                  </button>
+                  <div className="navbar-chat-header-row">
+                    <button 
+                      className="navbar-chat-back-btn"
+                      onClick={() => setSelectedConversation(null)}
+                      title="Back to conversations"
+                    >
+                      ← Back
+                    </button>
+                    <h4>{selectedConversation.userName}</h4>
+                    <button 
+                      className="navbar-chat-delete-btn"
+                      onClick={handleDeleteConversation}
+                      title="Delete conversation"
+                    >
+                      Delete Chat
+                    </button>
+                  </div>
+                  {selectedConversation?.itemId && (
+                    <div className="navbar-chat-item-row">
+                      <span className="navbar-chat-item-title">{selectedConversation.itemTitle}</span>
+                      {!isResolved ? (
+                        <button 
+                          onClick={handleResolveItem} 
+                          disabled={isResolving}
+                          className="navbar-chat-resolve-button-header"
+                          title="Mark this item as resolved"
+                        >
+                          {isResolving ? 'Resolving...' : 'Resolve Item'}
+                        </button>
+                      ) : (
+                        <span className="navbar-resolve-success-badge">✓ Resolved</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="navbar-chat-messages">
@@ -181,6 +277,10 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
                   )}
                   <div ref={messagesEndRef} />
                 </div>
+
+                {resolveError && (
+                  <div className="navbar-resolve-error-message">{resolveError}</div>
+                )}
 
                 <div className="navbar-chat-input-area">
                   <textarea

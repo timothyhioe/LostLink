@@ -217,10 +217,8 @@
   border-bottom: 1px solid #e0e0e0;
   background-color: #f5f5f5;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: nowrap;
+  flex-direction: column;
+  gap: 0.75rem;
   flex-shrink: 0;
   position: sticky;
   top: 0;
@@ -232,13 +230,21 @@
   border-bottom-color: #444;
 }
 
+/* First row: Back | Username | Delete Chat */
+.navbar-chat-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
 .navbar-chat-window-header h4 {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
   flex: 1;
   min-width: auto;
-  order: 2;
   text-align: center;
 }
 
@@ -252,7 +258,6 @@
   transition: background-color 0.2s;
   color: #666;
   font-weight: 600;
-  order: 1;
   white-space: nowrap;
 }
 
@@ -280,7 +285,6 @@
   align-items: center;
   justify-content: center;
   color: red;
-  order: 3;
   white-space: nowrap;
 }
 
@@ -292,6 +296,140 @@
   background-color: rgba(255, 68, 68, 0.2);
 }
 
+/* Second row: Item Title | Resolve Button */
+.navbar-chat-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background-color: #e8f4f8;
+  border-radius: 6px;
+}
+
+.navbar-chat-panel.dark-mode .navbar-chat-item-row {
+  background-color: #1a3a52;
+}
+
+.navbar-chat-item-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar-chat-panel.dark-mode .navbar-chat-item-title {
+  color: #e0e0e0;
+}
+
+.navbar-chat-resolve-button-header {
+  padding: 0.4rem 0.8rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.navbar-chat-resolve-button-header:hover:not(:disabled) {
+  background-color: #45a049;
+  transform: translateY(-1px);
+}
+
+.navbar-chat-resolve-button-header:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.navbar-chat-resolve-button-header:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.navbar-resolve-success-badge {
+  padding: 0.4rem 0.8rem;
+  background-color: #c8e6c9;
+  color: #2e7d32;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.navbar-chat-panel.dark-mode .navbar-resolve-success-badge {
+  background-color: #2e7d32;
+  color: #c8e6c9;
+}
+
+.navbar-chat-resolve-section {
+  padding: 12px 1rem;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.navbar-chat-panel.dark-mode .navbar-chat-resolve-section {
+  background-color: #222;
+  border-top-color: #444;
+}
+
+.navbar-chat-resolve-button {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.navbar-chat-resolve-button:hover:not(:disabled) {
+  background-color: #45a049;
+  transform: translateY(-1px);
+}
+
+.navbar-chat-resolve-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.navbar-chat-resolve-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.navbar-resolve-success-message {
+  padding: 10px 12px;
+  background-color: #c8e6c9;
+  color: #2e7d32;
+  border-radius: 6px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.navbar-resolve-error-message {
+  padding: 8px 12px;
+  background-color: #ffcdd2;
+  color: #c62828;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+}
 @media (max-width: 480px) {
   .navbar-chat-window-header {
     padding: 0.75rem;
