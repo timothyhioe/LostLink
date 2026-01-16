@@ -203,7 +203,6 @@ export default function MyItems() {
         window.location.reload()
       }, 1000)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred'
       console.error('Error resolving item:', err)
       setResolvingId(null)
     }
