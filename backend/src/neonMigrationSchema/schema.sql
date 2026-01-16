@@ -65,6 +65,7 @@ CREATE TABLE chat_messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  item_id UUID REFERENCES items(id) ON DELETE CASCADE,
   content VARCHAR(5000) NOT NULL,
   read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -75,6 +76,7 @@ CREATE TABLE chat_messages (
 -- Indexes for chat messages table
 CREATE INDEX idx_chat_messages_sender_id ON chat_messages(sender_id);
 CREATE INDEX idx_chat_messages_recipient_id ON chat_messages(recipient_id);
+CREATE INDEX idx_chat_messages_item_id ON chat_messages(item_id);
 CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at DESC);
 CREATE INDEX idx_chat_messages_unread ON chat_messages(recipient_id, read);
 

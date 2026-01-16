@@ -55,6 +55,8 @@ export default function MyItems() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | null>(null)
+  const [resolvingId, setResolvingId] = useState<string | null>(null)
+  const [resolveError, setResolveError] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -170,6 +172,47 @@ export default function MyItems() {
     }
   }
 
+  const handleResolveItem = async (itemId: string) => {
+    try {
+      setResolvingId(itemId)
+      setResolveError(null)
+
+      const authToken = localStorage.getItem('authToken')
+      if (!authToken) {
+        setResolveError('Authentication required')
+        setResolvingId(null)
+        return
+      }
+
+      const response = await fetch(`${API_BASE_URL}/items/${itemId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ status: 'resolved' })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to resolve item')
+      }
+
+      // Update item status in state
+      setItems(items.map(item => item.id === itemId ? { ...item, status: 'resolved' } : item))
+      setResolvingId(null)
+      
+      // Refresh page after 1 second so changes are visible
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An error occurred'
+      setResolveError(message)
+      console.error('Error resolving item:', err)
+      setResolvingId(null)
+    }
+  }
+
   const handleDeleteItem = async (itemId: string) => {
     setItemToDelete(itemId)
     setShowDeleteDialog(true)
@@ -263,8 +306,8 @@ export default function MyItems() {
 
               <div className="my-item-details">
                 <div className="my-item-header">
-                  <span className={`my-item-type-label ${item.type === 'lost' ? 'lost' : 'found'}`}>
-                    {item.type === 'lost' ? 'Lost' : 'Found'}
+                  <span className={`my-item-type-label ${item.status === 'resolved' ? 'resolved' : item.type === 'lost' ? 'lost' : 'found'}`}>
+                    {item.status === 'resolved' ? 'Resolved' : item.type === 'lost' ? 'Lost' : 'Found'}
                   </span>
                 </div>
                 <h3 className="my-item-what">{item.what}</h3>
@@ -285,6 +328,18 @@ export default function MyItems() {
               </div>
 
               <div className="my-item-right">
+                {item.status === 'resolved' && (
+                  <span className="my-item-resolved-status">Resolved</span>
+                )}
+                {item.status !== 'resolved' && (
+                  <button
+                    className="my-item-resolve-button"
+                    onClick={() => handleResolveItem(item.id)}
+                    disabled={resolvingId === item.id}
+                  >
+                    {resolvingId === item.id ? 'Resolving...' : 'Resolve'}
+                  </button>
+                )}
                 <button
                   className="my-item-delete-button"
                   onClick={() => handleDeleteItem(item.id)}

@@ -33,6 +33,8 @@ export interface ChatConversation {
   lastMessage?: string;
   lastMessageTime?: string;
   unreadCount: number;
+  itemId?: string;
+  itemTitle?: string;
 }
 
 interface ChatContextType {
@@ -54,7 +56,7 @@ interface ChatContextType {
   currentRoom: string | null;
   selectedConversationId: string | null;
   setSelectedConversation: (userId: string | null, userName?: string) => void;
-  openChatWithUser: (userId: string, userName: string) => void;
+  openChatWithUser: (userId: string, userName: string, itemId?: string, itemTitle?: string) => void;
   chatOpenTrigger: number;
 }
 
@@ -114,11 +116,31 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             "[Chat] Loaded conversations from database:",
             data.conversations
           );
-          // Filter out self-conversations
+          
+          // Get localStorage conversations to preserve itemId/itemTitle
+          const localStorageConvs = (() => {
+            try {
+              const saved = localStorage.getItem("chatConversations");
+              return saved ? JSON.parse(saved) : [];
+            } catch {
+              return [];
+            }
+          })();
+          
+          // Merge DB conversations with localStorage, preserving itemId/itemTitle from localStorage
           const filteredConversations = data.conversations.filter(
             (conv: ChatConversation) => conv.userId !== userId
-          );
+          ).map((dbConv: ChatConversation) => {
+            const localConv = localStorageConvs.find((c: any) => c.userId === dbConv.userId);
+            return {
+              ...dbConv,
+              itemId: localConv?.itemId,
+              itemTitle: localConv?.itemTitle,
+            };
+          });
+          
           setConversations(filteredConversations);
+          localStorage.setItem("chatConversations", JSON.stringify(filteredConversations));
         }
       } catch (error) {
         console.error(
@@ -162,9 +184,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     });
 
     // Listen for incoming messages
-    newSocket.on("receive_message", (message: ChatMessage) => {
+    newSocket.on("receive_message", (message: ChatMessage & { itemId?: string; itemTitle?: string }) => {
       console.log(
-        `[Message] Received from ${message.senderName}: "${message.content}"`
+        `[Message] Received from ${message.senderName}: "${message.content}"`,
+        { itemId: message.itemId, itemTitle: message.itemTitle }
       );
       setMessages((prev) => [...prev, message]);
 
@@ -179,19 +202,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const existingConv = prev.find((c) => c.userId === senderId);
 
         if (existingConv) {
-          // Update existing conversation with latest message
-          return prev.map((c) =>
+          // Update existing conversation with latest message and itemId/itemTitle if provided
+          const updated = prev.map((c) =>
             c.userId === senderId
               ? {
                   ...c,
                   lastMessage: message.content,
                   lastMessageTime: message.timestamp,
+                  // Update itemId/itemTitle if provided in message
+                  itemId: message.itemId || c.itemId,
+                  itemTitle: message.itemTitle || c.itemTitle,
                 }
               : c
           );
+          localStorage.setItem("chatConversations", JSON.stringify(updated));
+          return updated;
         } else {
           // Create new conversation from received message
-          return [
+          const updated = [
             ...prev,
             {
               userId: senderId,
@@ -199,8 +227,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               lastMessage: message.content,
               lastMessageTime: message.timestamp,
               unreadCount: 0,
+              itemId: message.itemId,
+              itemTitle: message.itemTitle,
             },
           ];
+          localStorage.setItem("chatConversations", JSON.stringify(updated));
+          return updated;
         }
       });
     });
@@ -208,8 +240,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Listen for message notifications (when recipient isn't in the room)
     newSocket.on(
       "new_message_notification",
-      (data: { senderId: string; senderName: string; content: string }) => {
-        console.log(`[Notification] Message from ${data.senderName}`);
+      (data: { senderId: string; senderName: string; content: string; itemId?: string; itemTitle?: string }) => {
+        console.log(`[Notification] Message from ${data.senderName}`, { itemId: data.itemId, itemTitle: data.itemTitle });
 
         // Don't create conversation with yourself
         if (data.senderId === userId) {
@@ -232,20 +264,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
           if (existingConv) {
             // Update existing conversation
-            return prev.map((conv) => {
+            const updated = prev.map((conv) => {
               if (conv.userId === data.senderId) {
                 return {
                   ...conv,
                   unreadCount: conv.unreadCount + 1,
                   lastMessage: data.content,
                   lastMessageTime: new Date().toISOString(),
+                  // Update itemId/itemTitle if provided
+                  itemId: data.itemId || conv.itemId,
+                  itemTitle: data.itemTitle || conv.itemTitle,
                 };
               }
               return conv;
             });
+            localStorage.setItem("chatConversations", JSON.stringify(updated));
+            return updated;
           } else {
             // Create new conversation from notification
-            return [
+            const updated = [
               ...prev,
               {
                 userId: data.senderId,
@@ -253,8 +290,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                 lastMessage: data.content,
                 lastMessageTime: new Date().toISOString(),
                 unreadCount: 1,
+                itemId: data.itemId,
+                itemTitle: data.itemTitle,
               },
             ];
+            localStorage.setItem("chatConversations", JSON.stringify(updated));
+            return updated;
           }
         });
       }
@@ -306,12 +347,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Get itemId from current conversation if available
+    const conversation = conversations.find(c => c.userId === recipientId);
+    const itemId = conversation?.itemId;
+    const itemTitle = conversation?.itemTitle;
+
     socket.emit("send_message", {
       senderId,
       senderName,
       recipientId,
       content,
       timestamp: new Date().toISOString(),
+      itemId,
+      itemTitle,
     });
   };
 
@@ -384,17 +432,33 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const addConversation = (userId: string, userName: string) => {
-    console.log(`[Chat] Chatting with ${userName}`);
+  const openChatWithUser = (userId: string, userName: string, itemId?: string, itemTitle?: string) => {
+    console.log(`[Chat] Chatting with ${userName}`, { itemId, itemTitle });
     setConversations((prev) => {
-      const exists = prev.find((c) => c.userId === userId);
-      if (exists) return prev;
-      const updated = [{ userId, userName, unreadCount: 0 }, ...prev];
+      const existingIndex = prev.findIndex((c) => c.userId === userId);
+      if (existingIndex !== -1) {
+        // Update existing conversation with item info if provided
+        if (itemId || itemTitle) {
+          const updated = [...prev];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            itemId: itemId || updated[existingIndex].itemId,
+            itemTitle: itemTitle || updated[existingIndex].itemTitle,
+          };
+          localStorage.setItem("chatConversations", JSON.stringify(updated));
+          return updated;
+        }
+        return prev;
+      }
+      // Create new conversation
+      const updated = [{ userId, userName, unreadCount: 0, itemId, itemTitle }, ...prev];
       localStorage.setItem("chatConversations", JSON.stringify(updated));
       return updated;
     });
     // Select this conversation immediately
     setSelectedConversationId(userId);
+    // Trigger chat modal to open
+    setChatOpenTrigger((prev) => prev + 1);
   };
 
   const setSelectedConversation = (
@@ -421,46 +485,53 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     socket.emit("mark_as_read", { roomId });
   };
 
-  const openChatWithUser = (userId: string, userName: string) => {
-    const user = localStorage.getItem("user");
-    if (!user) return;
-
-    const parsedUser = JSON.parse(user);
-    const currentUserId = parsedUser.id || parsedUser._id;
-
-    // Prevent self-conversations
-    if (userId === currentUserId) {
-      console.warn("[Chat] Cannot open conversation with yourself");
-      return;
+  const deleteConversation = (userId: string) => {
+    // Delete chat history from database
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      fetch(`${apiUrl}/api/chat/conversation/${userId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          console.log("[Chat] Successfully deleted conversation from database for user:", userId);
+          return response.json();
+        })
+        .catch((err) =>
+          console.error("[Chat] Failed to delete conversation from database:", err)
+        );
+    } else {
+      console.warn("[Chat] No auth token available, skipping database deletion");
     }
 
-    // First ensure conversation exists
-    setConversations((prev) => {
-      const exists = prev.find((c) => c.userId === userId);
-      if (!exists) {
-        const updated = [{ userId, userName, unreadCount: 0 }, ...prev];
-        localStorage.setItem("chatConversations", JSON.stringify(updated));
-        return updated;
-      }
-      return prev;
-    });
-    // Select the user
-    setSelectedConversationId(userId);
-    // Increment trigger to force navbar to open chat even if userId didn't change
-    setChatOpenTrigger((prev) => prev + 1);
-  };
-
-  const deleteConversation = (userId: string) => {
     // Remove from conversations list
     setConversations((prev) => {
       const updated = prev.filter((c) => c.userId !== userId);
       localStorage.setItem("chatConversations", JSON.stringify(updated));
+      console.log("[Chat] Removed conversation from UI for user:", userId);
       return updated;
     });
     // If this is the currently selected conversation, deselect it
     if (selectedConversationId === userId) {
       setSelectedConversationId(null);
+      console.log("[Chat] Deselected conversation");
     }
+  };
+
+  const addConversation = (userId: string, userName: string) => {
+    setConversations((prev) => {
+      const exists = prev.find((c) => c.userId === userId);
+      if (exists) return prev;
+      const updated = [{ userId, userName, unreadCount: 0 }, ...prev];
+      localStorage.setItem("chatConversations", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const getCurrentUserId = () => {

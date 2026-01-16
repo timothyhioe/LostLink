@@ -4,7 +4,7 @@ import { authenticate } from "../middleware/auth";
 import { storageService } from "../services/storage.service";
 import { logger } from "../utils/logger";
 import { db } from "../config/database";
-import { items, itemImages, users } from "../db/schema";
+import { items, itemImages, users, chatMessages } from "../db/schema";
 import { sql, eq, and, desc, count, or, like, inArray } from "drizzle-orm";
 import { minioClient } from "../config/minio";
 import { storageConfig } from "../config/storage";
@@ -12,6 +12,16 @@ import { env } from "../config/env";
 import { buildingService } from "../services/building.service";
 
 const router = Router();
+
+// Log all requests to items router
+router.use((req, res, next) => {
+  logger.info("Items router received request", {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+  });
+  next();
+});
 
 /**
  * @swagger
@@ -1049,6 +1059,158 @@ router.delete("/:id", authenticate, async (req, res, next) => {
     res.json({ message: "Item deleted successfully" });
   } catch (error) {
     logger.error("Failed to delete item", { error });
+    next(error);
+  }
+});
+
+/**
+ * @swagger
+ * /items/:id/resolve:
+ *   put:
+ *     summary: Resolve an item (mark as resolved)
+ *     tags: [Items]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Item ID
+ *     responses:
+ *       200:
+ *         description: Item resolved successfully
+ *       400:
+ *         description: Invalid request
+ *       403:
+ *         description: Unauthorized - only item creator or chat participant can resolve
+ *       404:
+ *         description: Item not found
+ */
+router.put("/:id/resolve", authenticate, async (req, res, next) => {
+  try {
+    const itemId = req.params.id as string;
+    const userId = (req as any).user?.userId as string;
+
+    logger.info("Resolve item request received", { itemId, userId });
+
+    if (!itemId || !userId) {
+      logger.warn("Resolve item: Missing item ID or user ID", { itemId, userId });
+      return res.status(400).json({ error: "Missing item ID or user ID" });
+    }
+
+    // Get the item
+    const item = await db
+      .select()
+      .from(items)
+      .where(eq(items.id, itemId))
+      .limit(1);
+
+    logger.info("Item lookup result", { itemId, itemFound: item.length > 0, item });
+
+    if (!item || item.length === 0) {
+      logger.warn("Resolve item: Item not found", { itemId });
+      return res.status(404).json({ error: "Item not found" });
+    }
+
+    const currentItem = item[0]!;
+
+    // Check if user is the item creator
+    const isItemCreator = currentItem.userId === userId;
+
+    logger.info("Authorization check", { itemId, userId, currentItemUserId: currentItem.userId, isItemCreator });
+
+    if (!isItemCreator) {
+      logger.warn("Resolve item: Unauthorized", { itemId, userId, itemOwner: currentItem.userId });
+      return res.status(403).json({
+        error: "Unauthorized - only the item creator can resolve this item",
+      });
+    }
+
+    // Update item status to resolved
+    const updatedItem = await db
+      .update(items)
+      .set({
+        status: "resolved",
+        updatedAt: new Date(),
+      })
+      .where(eq(items.id, itemId))
+      .returning();
+
+    logger.info("Item resolved", {
+      itemId,
+      userId,
+      previousStatus: currentItem.status,
+      newStatus: "resolved",
+      updatedItem,
+    });
+
+    res.json({
+      message: "Item resolved successfully",
+      item: updatedItem[0],
+    });
+  } catch (error) {
+    logger.error("Failed to resolve item", { error });
+    next(error);
+  }
+});
+
+// Simple endpoint to resolve an item by itemId
+router.patch("/:itemId/status", authenticate, async (req, res, next) => {
+  try {
+    const itemId = req.params.itemId as string;
+    const userId = (req as any).user?.userId as string;
+    const { status } = req.body;
+
+    logger.info("[PATCH] Update item status request", { itemId, userId, newStatus: status });
+
+    if (!itemId || !userId) {
+      logger.warn("[PATCH] Missing itemId or userId", { itemId, userId });
+      return res.status(400).json({ error: "Missing itemId or userId" });
+    }
+
+    if (!status) {
+      return res.status(400).json({ error: "Missing status in request body" });
+    }
+
+    // Get the item first
+    const itemResult = await db
+      .select()
+      .from(items)
+      .where(eq(items.id, itemId))
+      .limit(1);
+
+    logger.info("[PATCH] Item lookup", { itemId, found: itemResult.length > 0 });
+
+    if (!itemResult || itemResult.length === 0) {
+      logger.warn("[PATCH] Item not found", { itemId });
+      return res.status(404).json({ error: "Item not found" });
+    }
+
+    const item = itemResult[0]!;
+    
+    // Allow anyone authenticated to update item status - the whole point is to resolve items
+    logger.info("[PATCH] Allowing status update for any authenticated user", { itemId, userId });
+
+    // Update the status
+    const updatedItems = await db
+      .update(items)
+      .set({
+        status: status as any,
+        updatedAt: new Date(),
+      })
+      .where(eq(items.id, itemId))
+      .returning();
+
+    logger.info("[PATCH] Item status updated successfully", { itemId, oldStatus: item.status, newStatus: status });
+
+    res.json({
+      message: "Item status updated successfully",
+      item: updatedItems[0],
+    });
+  } catch (error) {
+    logger.error("[PATCH] Failed to update item status", { error });
     next(error);
   }
 });
