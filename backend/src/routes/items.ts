@@ -122,6 +122,13 @@ router.post("/", authenticate, uploadSingle, async (req, res, next) => {
       });
     }
 
+    //for FOUND items, image is required
+    if (type === "found" && !req.file) {
+      return res.status(400).json({
+        message: "Image is required for found items",
+      });
+    }
+
     // Handle image upload first (before transaction)
     let uploadResult = null;
     if (req.file) {
@@ -827,6 +834,23 @@ router.patch("/:id", authenticate, uploadSingle, async (req, res, next) => {
     if (req.file) {
       uploadResult = await storageService.uploadFile(req.file, "items");
       logger.info("New image added to item", { itemId: id });
+    }
+
+    // For 'found' items, ensure at least one image exists (either existing or newly uploaded)
+    if (item.type === "found") {
+      // Check if item has existing images
+      const existingImages = await db
+        .select({ id: itemImages.id })
+        .from(itemImages)
+        .where(eq(itemImages.itemId, id))
+        .limit(1);
+
+      // If no existing images and no new image being uploaded, reject
+      if (existingImages.length === 0 && !uploadResult) {
+        return res.status(400).json({
+          message: "Image is required for found items. Please upload an image.",
+        });
+      }
     }
 
     /*

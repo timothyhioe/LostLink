@@ -203,6 +203,12 @@ export default function ItemPostForm({
       return;
     }
 
+    // Validate image: required for 'found' items
+    if (formData.type === "found" && !selectedImage) {
+      setError("Image is required for found items");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
