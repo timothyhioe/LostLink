@@ -8,6 +8,44 @@ import { logger } from '../utils/logger'
 
 const router = Router()
 
+// Delete all messages between two users - must be defined before other routes
+router.delete('/conversation/:otherUserId', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId as string
+    const { otherUserId } = req.params
+
+    logger.info(`[Chat] Delete endpoint called with userId: ${userId}, otherUserId: ${otherUserId}`)
+
+    if (!userId || !otherUserId) {
+      logger.warn(`[Chat] Missing user IDs - userId: ${userId}, otherUserId: ${otherUserId}`)
+      return res.status(400).json({ error: 'Missing user IDs' })
+    }
+
+    // Delete all messages between these two users
+    const result = await db
+      .delete(chatMessages)
+      .where(
+        or(
+          and(
+            eq(chatMessages.senderId, userId),
+            eq(chatMessages.recipientId, otherUserId)
+          ),
+          and(
+            eq(chatMessages.senderId, otherUserId),
+            eq(chatMessages.recipientId, userId)
+          )
+        )
+      )
+      .execute()
+
+    logger.info(`[Chat] Deleted conversation between ${userId} and ${otherUserId}`)
+    res.json({ message: 'Conversation deleted successfully' })
+  } catch (error) {
+    logger.error('[Chat] Error deleting conversation:', error)
+    res.status(500).json({ error: 'Failed to delete conversation' })
+  }
+})
+
 // Get all conversations for current user
 router.get('/conversations', authenticate, async (req: Request, res: Response) => {
   try {
@@ -159,3 +197,4 @@ router.post('/mark-read/:senderId', authenticate, async (req: Request, res: Resp
 })
 
 export default router
+

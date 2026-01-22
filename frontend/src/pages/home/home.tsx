@@ -56,7 +56,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<"all" | "lost" | "found">("all");
+  const [filterType, setFilterType] = useState<"all" | "lost" | "found" | "resolved">("all");
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(
     null
   );
@@ -214,8 +214,16 @@ export default function Home() {
       alert("You cannot contact yourself!");
       return;
     }
-    // Open chat with this user
-    openChatWithUser(item.userId, item.founder);
+    // Log for debugging
+    console.log('[Contact] Opening chat for item:', {
+      itemId: item.id,
+      itemTitle: item.title,
+      itemType: item.type,
+      userId: item.userId,
+      userName: item.founder
+    });
+    // Open chat with this user, passing itemId and itemTitle
+    openChatWithUser(item.userId, item.founder, item.id, item.title);
   };
 
   const handleSearch = (query: string) => {
@@ -266,6 +274,14 @@ export default function Home() {
             >
               Found
             </button>
+            <button
+              className={`home-filter-btn home-filter-btn-resolved ${
+                filterType === "resolved" ? "active" : ""
+              }`}
+              onClick={() => setFilterType("resolved")}
+            >
+              Resolved
+            </button>
           </div>
 
           {loading ? (
@@ -283,7 +299,12 @@ export default function Home() {
           ) : (
             items
               .filter(
-                (item) => filterType === "all" || item.type === filterType
+                (item) => {
+                  if (filterType === "all") return true;
+                  if (filterType === "resolved") return item.status === "resolved";
+                  // For lost/found filters, exclude resolved items
+                  return item.type === filterType && item.status !== "resolved";
+                }
               )
               .filter((item) => {
                 // Search filter
@@ -313,13 +334,19 @@ export default function Home() {
 
                   <div className="home-item-details">
                     <div className="home-item-header">
-                      <span
-                        className={`home-item-type-label ${
-                          item.type === "lost" ? "lost" : "found"
-                        }`}
-                      >
-                        {item.type === "lost" ? "Lost" : "Found"}
-                      </span>
+                      {item.status === "resolved" ? (
+                        <span className="home-item-type-label resolved">
+                          Resolved
+                        </span>
+                      ) : (
+                        <span
+                          className={`home-item-type-label ${
+                            item.type === "lost" ? "lost" : "found"
+                          }`}
+                        >
+                          {item.type === "lost" ? "Lost" : "Found"}
+                        </span>
+                      )}
                     </div>
                     <h3 className="home-item-what">{item.what}</h3>
                     <p className="home-item-description">{item.description}</p>
