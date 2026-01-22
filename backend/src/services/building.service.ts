@@ -45,7 +45,7 @@ const BUILDING_COORDINATES: Record<string, BuildingCoordinates> = {
   A11: {
     lng: 8.63246997320878,
     lat: 49.86593509110833,
-    name: "A11 / Bistro Haardtring",
+    name: "A11",
   },
   A12: {
     lng: 8.632996158481973,
@@ -114,12 +114,12 @@ const BUILDING_COORDINATES: Record<string, BuildingCoordinates> = {
   C10: {
     lng: 8.638193032596806,
     lat: 49.8673112616893,
-    name: "C10 Hochhaus",
+    name: "C10",
   },
   Mensa: {
     lng: 8.637755468680496,
     lat: 49.866844303497345,
-    name: "Mensa Schöfferstraße / C11",
+    name: "C11",
   },
   C12: {
     lng: 8.637715272920559,
@@ -164,7 +164,7 @@ const BUILDING_COORDINATES: Record<string, BuildingCoordinates> = {
   C23: {
     lng: 8.63886300848958,
     lat: 49.86773070488263,
-    name: "C23 / Mensa Schöffers",
+    name: "C23",
   },
 
   // D Buildings
@@ -275,7 +275,7 @@ const BUILDING_COORDINATES: Record<string, BuildingCoordinates> = {
   F11: {
     lng: 8.856261622643046,
     lat: 49.901122976874035,
-    name: "Mensa Dieburg / F11",
+    name: "F11",
   },
   F12: {
     lng: 8.857389660040099,
@@ -355,7 +355,7 @@ export class BuildingService {
    * @returns Building coordinates or null if not found
    */
   getBuildingCoordinates(
-    buildingName: string | null | undefined
+    buildingName: string | null | undefined,
   ): BuildingCoordinates | null {
     if (!buildingName) {
       return null;
@@ -393,7 +393,7 @@ export class BuildingService {
    * @returns Building coordinates (never null, falls back to DEFAULT)
    */
   getBuildingCoordinatesWithDefault(
-    buildingName: string | null | undefined
+    buildingName: string | null | undefined,
   ): BuildingCoordinates {
     const coordinates = this.getBuildingCoordinates(buildingName);
 
