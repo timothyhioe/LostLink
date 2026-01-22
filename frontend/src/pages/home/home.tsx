@@ -56,9 +56,11 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<"all" | "lost" | "found" | "resolved">("all");
+  const [filterType, setFilterType] = useState<
+    "all" | "lost" | "found" | "resolved"
+  >("all");
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(
-    null
+    null,
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
   // re push to fix vercel repository view error
@@ -91,7 +93,7 @@ export default function Home() {
           where: `Where found: ${item.buildingName}`,
           location_display: `Location: ${item.buildingName}`,
           when: `When found: ${new Date(item.createdAt).toLocaleDateString(
-            "en-US"
+            "en-US",
           )} ${new Date(item.createdAt).toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
@@ -164,7 +166,7 @@ export default function Home() {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener(
         "themechange",
-        handleThemeChange as EventListener
+        handleThemeChange as EventListener,
       );
     };
   }, [isDarkMode]);
@@ -215,12 +217,12 @@ export default function Home() {
       return;
     }
     // Log for debugging
-    console.log('[Contact] Opening chat for item:', {
+    console.log("[Contact] Opening chat for item:", {
       itemId: item.id,
       itemTitle: item.title,
       itemType: item.type,
       userId: item.userId,
-      userName: item.founder
+      userName: item.founder,
     });
     // Open chat with this user, passing itemId and itemTitle
     openChatWithUser(item.userId, item.founder, item.id, item.title);
@@ -298,14 +300,16 @@ export default function Home() {
             </p>
           ) : (
             items
-              .filter(
-                (item) => {
-                  if (filterType === "all") return true;
-                  if (filterType === "resolved") return item.status === "resolved";
-                  // For lost/found filters, exclude resolved items
-                  return item.type === filterType && item.status !== "resolved";
+              .filter((item) => {
+                if (filterType === "all") {
+                  return item.status !== "resolved";
                 }
-              )
+                if (filterType === "resolved") {
+                  return item.status === "resolved";
+                }
+                // For lost/found filters, exclude resolved items
+                return item.type === filterType && item.status !== "resolved";
+              })
               .filter((item) => {
                 // Search filter
                 const query = searchQuery.toLowerCase();
@@ -372,7 +376,7 @@ export default function Home() {
                           {new Date(item.createdAt).toLocaleDateString("de-DE")}{" "}
                           {new Date(item.createdAt).toLocaleTimeString(
                             "de-DE",
-                            { hour: "2-digit", minute: "2-digit" }
+                            { hour: "2-digit", minute: "2-digit" },
                           )}
                         </p>
                       </div>
