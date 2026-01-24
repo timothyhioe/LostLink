@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { db } from '../config/database'
 import { chatMessages } from '../db/schema/chat'
-import { users } from '../db/schema'
+import { users, items } from '../db/schema'
 import { and, eq, or, desc, sql } from 'drizzle-orm'
 import { authenticate } from '../middleware/auth'
 import { logger } from '../utils/logger'
@@ -69,7 +69,7 @@ router.get('/conversations', authenticate, async (req: Request, res: Response) =
       .execute()
 
     // Build conversation map
-    const conversationMap = new Map<string, { userId: string; lastMessage: string; lastMessageTime: string }>()
+    const conversationMap = new Map<string, { userId: string; lastMessage: string; lastMessageTime: string; itemId: string | null }>()
 
     for (const msg of messages) {
       const otherUserId = msg.senderId === userId ? msg.recipientId : msg.senderId
@@ -83,7 +83,8 @@ router.get('/conversations', authenticate, async (req: Request, res: Response) =
         conversationMap.set(otherUserId, {
           userId: otherUserId,
           lastMessage: msg.content,
-          lastMessageTime: msg.createdAt.toISOString()
+          lastMessageTime: msg.createdAt.toISOString(),
+          itemId: msg.itemId
         })
       }
     }
@@ -99,12 +100,29 @@ router.get('/conversations', authenticate, async (req: Request, res: Response) =
 
       if (userResult && userResult.length > 0) {
         const userName = userResult[0]?.name as string
+        
+        // Get item title if itemId exists
+        let itemTitle: string | undefined = undefined
+        if (convData.itemId) {
+          const itemResult = await db
+            .select({ title: items.title })
+            .from(items)
+            .where(eq(items.id, convData.itemId))
+            .execute()
+          
+          if (itemResult && itemResult.length > 0) {
+            itemTitle = itemResult[0]?.title
+          }
+        }
+        
         conversations.push({
           userId: otherUserId,
           userName: userName || 'Unknown',
           lastMessage: convData.lastMessage,
           lastMessageTime: convData.lastMessageTime,
-          unreadCount: 0
+          unreadCount: 0,
+          itemId: convData.itemId,
+          itemTitle
         })
       }
     }
