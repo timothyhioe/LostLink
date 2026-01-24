@@ -40,6 +40,7 @@ export interface ChatConversation {
 interface ChatContextType {
   socket: Socket | null;
   isConnected: boolean;
+  connectionError: string | null;
   messages: ChatMessage[];
   sendMessage: (recipientId: string, content: string) => void;
   joinChat: (recipientId: string, recipientName: string) => void;
@@ -65,6 +66,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState<
@@ -176,6 +178,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     newSocket.on("connect", () => {
       console.log("[Chat] Connected");
       setIsConnected(true);
+      setConnectionError(null);
     });
 
     newSocket.on("disconnect", () => {
@@ -308,10 +311,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     newSocket.on("error", (error: string) => {
       console.error(`[Chat Error] ${error}`);
+      setConnectionError("Chat connection error. Your browser may not support WebSocket.");
     });
 
     newSocket.on("connect_error", (error) => {
       console.error(`[Connection Error] ${error}`);
+      setConnectionError("Unable to connect to chat. Please check your browser compatibility.");
     });
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -380,7 +385,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const roomId = getRoomId(userId, recipientId);
 
     setCurrentRoom(roomId);
-    setMessages([]);
+    // Don't clear messages here - wait for message_history event from server
 
     // Clear notification for this sender
     setUnreadNotifications((prev) => {
@@ -546,6 +551,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       value={{
         socket,
         isConnected,
+        connectionError,
         messages,
         sendMessage,
         joinChat,
