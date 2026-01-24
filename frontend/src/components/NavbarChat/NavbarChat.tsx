@@ -333,7 +333,6 @@ export default function NavbarChat({ isOpen, onClose, isDarkMode }: NavbarChatPr
               <div className="navbar-chat-messages">
                 {connectionError ? (
                   <div className="navbar-chat-error">
-                    <div className="navbar-chat-error-icon">⚠️</div>
                     <div className="navbar-chat-error-title">Chat Unavailable</div>
                     <div className="navbar-chat-error-message">{connectionError}</div>
                   </div>
