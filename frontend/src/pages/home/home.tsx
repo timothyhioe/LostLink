@@ -5,6 +5,7 @@ import { useChat } from "../../contexts/ChatContext";
 import locationLogo from "../../assets/Home/location_logo.png";
 import dateLogo from "../../assets/Home/date_logo.png";
 import profileIcon from "../../assets/Navbar/profile-circle_.png";
+import profileIconWhite from "../../assets/Navbar/profile-circle-white.png";
 
 interface ItemImage {
   url: string;
@@ -390,7 +391,7 @@ export default function Home() {
                           <img
                             className="home-founder-image"
                             alt="Profile"
-                            src={profileIcon}
+                            src={isDarkMode ? profileIconWhite : profileIcon}
                           />
                         </div>
                         <div className="home-founder-info">
